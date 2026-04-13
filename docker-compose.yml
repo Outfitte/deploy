@@ -4,15 +4,14 @@ services:
     # No port mapping — reachable only through frontend Nginx proxy
     env_file: .env
     volumes:
-      - ${DATA_PATH:-./data}:/data          # SQLite database directory; created on first run
-      - ${MEDIA_STORAGE_PATH:-./media}:/data/media  # User-uploaded media files
+      - sqlite_data:/data
+      - media_storage:/data/media
     healthcheck:
       test:
         - "CMD"
-        - "wget"
-        - "--no-verbose"
-        - "--tries=1"
-        - "--spider"
+        - "curl"
+        - "--fail"
+        - "--silent"
         - "http://localhost:${SERVER_PORT:-8080}/health"
       interval: 30s
       timeout: 10s
@@ -23,8 +22,12 @@ services:
   frontend:
     build: ../frontend
     ports:
-      - "${PORT:-80}:80"
+      - "${PORT:-30080}:80"
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  sqlite_data:
+  media_storage:
