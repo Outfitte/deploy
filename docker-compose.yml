@@ -1,5 +1,6 @@
 services:
   backend:
+    image: ghcr.io/outfitte/backend:latest
     build: ../backend
     # No port mapping — reachable only through frontend Nginx proxy
     env_file: .env
@@ -20,6 +21,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    image: ghcr.io/outfitte/frontend:latest
     build: ../frontend
     ports:
       - "${PORT:-30080}:80"

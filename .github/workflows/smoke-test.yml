@@ -1,0 +1,78 @@
+name: Smoke Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  repository_dispatch:
+    types: [backend-published, frontend-published]
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull latest images
+        run: |
+          docker pull ghcr.io/outfitte/backend:latest
+          docker pull ghcr.io/outfitte/frontend:latest
+
+      - name: Generate JWT_SECRET
+        run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> $GITHUB_ENV
+
+      - name: Start stack
+        run: |
+          cat > .env <<EOF
+          PORT=30080
+          SERVER_PORT=8080
+          APP_ENV=production
+          MEDIA_STORAGE_PATH=/data/media
+          LOG_LEVEL=info
+          JWT_SECRET=${JWT_SECRET}
+          DB_DRIVER=sqlite
+          DB_DSN=/data/outfitte.db
+          EOF
+          docker compose up -d
+
+      - name: Wait for backend health
+        run: |
+          echo "Waiting for backend to become healthy..."
+          for i in $(seq 1 30); do
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' $(docker compose ps -q backend) 2>/dev/null || echo "missing")
+            echo "  attempt $i: $STATUS"
+            if [ "$STATUS" = "healthy" ]; then
+              echo "Backend is healthy."
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Backend did not become healthy in time."
+          docker compose logs backend
+          exit 1
+
+      - name: Smoke test — health endpoint
+        run: |
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --retry 5 \
+            --retry-delay 2 \
+            http://localhost:30080/health
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v
