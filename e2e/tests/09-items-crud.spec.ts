@@ -106,7 +106,7 @@ test.describe('item CRUD happy path', () => {
 
     // Metadata
     await expect(page.getByText('size')).toBeVisible();
-    await expect(page.locator('dd').filter({ hasText: 'M' })).toBeVisible();
+    await expect(page.locator('dd').filter({ hasText: /^M$/ })).toBeVisible();
 
     // Photo uploaded
     await expect(page.getByTestId('photo-gallery')).toBeVisible();
@@ -143,6 +143,11 @@ test.describe('item CRUD happy path', () => {
     await nameInput.clear();
     await nameInput.fill('Blue Oxford Shirt (Updated)');
 
+    // Edit the 'fabric' category hint field — 'Tops' has hint fields (size, fabric, fit).
+    // These are React-state-controlled inputs so Playwright's fill works correctly.
+    await page.getByPlaceholder('e.g. Cotton').fill('denim');
+    await expect(page.getByPlaceholder('e.g. Cotton')).toHaveValue('denim');
+
     // Submit
     await page.getByRole('button', { name: 'Save Changes' }).click();
 
@@ -150,12 +155,12 @@ test.describe('item CRUD happy path', () => {
     await expect(page).toHaveURL(/\/items\/[^/]+$/);
     await expect(page.getByTestId('item-detail-page')).toBeVisible();
 
-    // Verify updated name and that existing metadata is preserved
-    // Note: PATCH /items/{id} currently ignores metadata updates (Outfitte/backend#494).
-    // Once fixed, add assertions for hint field edits here.
+    // Verify updated name and edited metadata
     await expect(page.getByRole('heading', { name: 'Blue Oxford Shirt (Updated)' })).toBeVisible();
     await expect(page.getByText('size')).toBeVisible();
-    await expect(page.locator('dd').filter({ hasText: 'M' })).toBeVisible();
+    await expect(page.locator('dd').filter({ hasText: /^M$/ })).toBeVisible();
+    await expect(page.getByText('fabric')).toBeVisible();
+    await expect(page.getByText('denim')).toBeVisible();
   });
 
   test('delete item: confirmation dialog then item gone from list', async ({ page }) => {
