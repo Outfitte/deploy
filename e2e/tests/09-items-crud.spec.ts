@@ -7,12 +7,11 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('items empty state', () => {
-  test('items page shows empty CTA when no items exist', async ({ page }) => {
+  test('items page shows empty CTA before any items are created', async ({ page }) => {
     await page.goto('/items');
     await expect(page.getByTestId('items-page')).toBeVisible();
-    // Empty state is only shown if there are no items; if items exist this test is a no-op check
-    // The grid or empty state must render without error
-    await expect(page).toHaveURL(/\/items/);
+    await expect(page.getByText('No items yet')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Add your first item' })).toBeVisible();
   });
 });
 
@@ -107,7 +106,7 @@ test.describe('item CRUD happy path', () => {
 
     // Metadata
     await expect(page.getByText('size')).toBeVisible();
-    await expect(page.getByText('M')).toBeVisible();
+    await expect(page.locator('dd').filter({ hasText: 'M' })).toBeVisible();
 
     // Photo uploaded
     await expect(page.getByTestId('photo-gallery')).toBeVisible();
@@ -161,7 +160,7 @@ test.describe('item CRUD happy path', () => {
     // Verify updated name and both metadata fields
     await expect(page.getByRole('heading', { name: 'Blue Oxford Shirt (Updated)' })).toBeVisible();
     await expect(page.getByText('size')).toBeVisible();
-    await expect(page.getByText('M')).toBeVisible();
+    await expect(page.locator('dd').filter({ hasText: 'M' })).toBeVisible();
     await expect(page.getByText('material')).toBeVisible();
     await expect(page.getByText('cotton')).toBeVisible();
   });
@@ -182,8 +181,8 @@ test.describe('item CRUD happy path', () => {
     await expect(page).toHaveURL(/\/items$/);
     await expect(page.getByTestId('items-page')).toBeVisible();
 
-    // Item should no longer be visible in the grid
+    // Item should be gone from the DOM entirely
     const deletedCard = page.getByTestId('item-card').filter({ hasText: 'Blue Oxford Shirt (Updated)' });
-    await expect(deletedCard).not.toBeVisible();
+    await expect(deletedCard).not.toBeAttached();
   });
 });
