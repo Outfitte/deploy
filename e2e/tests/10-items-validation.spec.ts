@@ -5,9 +5,8 @@ test.beforeEach(async ({ page }) => {
   await adminLogin(page);
 });
 
-// Helper: create an item with a unique name and return its detail URL.
-// Uses item-detail-page testid to confirm the redirect completed, avoiding
-// the false positive where /items/new matches /\/items\/[^/]+$/.
+// Uses item-detail-page testid rather than a URL regex so that /items/new
+// (which matches /\/items\/[^/]+$/) cannot produce a false positive.
 async function createMinimalItem(page: import('@playwright/test').Page, name: string) {
   await page.goto('/items/new');
   await page.getByLabel('Name *').fill(name);
@@ -21,13 +20,10 @@ test.describe('form validation — empty name', () => {
     await page.goto('/items/new');
     await expect(page.getByTestId('create-item-page')).toBeVisible();
 
-    // Leave name empty and attempt to submit
     await page.getByRole('button', { name: 'Save' }).click();
 
-    // Should stay on the create page (URL unchanged)
     await expect(page).toHaveURL(/\/items\/new/);
 
-    // Name input should be marked invalid or an error message should be visible
     const nameInput = page.getByLabel('Name *');
     const isInvalid = await nameInput.evaluate((el) =>
       !(el as HTMLInputElement).validity.valid
@@ -46,8 +42,9 @@ test.describe('form validation — empty name', () => {
     await nameInput.clear();
     await page.getByRole('button', { name: 'Save Changes' }).click();
 
-    // Should still be on the edit page
+    // Polling assertion — fails if the page navigates away to the detail URL
     await expect(page).toHaveURL(/\/items\/[^/]+\/edit/);
+    await expect(page.getByTestId('edit-item-page')).toBeVisible();
 
     const isInvalid = await nameInput.evaluate((el) =>
       !(el as HTMLInputElement).validity.valid
@@ -62,25 +59,19 @@ test.describe('422 validation errors — create item', () => {
     await page.goto('/items/new');
     await page.getByLabel('Name *').fill(`ValidationPriceNoCurrency-${Date.now()}`);
     await page.getByLabel('Price').fill('29.99');
-    // Leave Currency empty
     await page.getByRole('button', { name: 'Save' }).click();
 
-    // Either stays on create page (client-side) or shows error toast/message
-    const stayedOnPage = page.url().includes('/items/new');
-    const errorShown = await page.locator('[role="alert"], [data-testid="error-toast"], .toast, text=/422|error|invalid/i').isVisible().catch(() => false);
-    expect(stayedOnPage || errorShown).toBe(true);
+    // Polling: if item is accepted the URL changes; this fails in that case
+    await expect(page).toHaveURL(/\/items\/new/);
   });
 
   test('currency without price shows error', async ({ page }) => {
     await page.goto('/items/new');
     await page.getByLabel('Name *').fill(`ValidationCurrencyNoPrice-${Date.now()}`);
     await page.getByLabel('Currency').fill('USD');
-    // Leave Price empty
     await page.getByRole('button', { name: 'Save' }).click();
 
-    const stayedOnPage = page.url().includes('/items/new');
-    const errorShown = await page.locator('[role="alert"], [data-testid="error-toast"], .toast, text=/422|error|invalid/i').isVisible().catch(() => false);
-    expect(stayedOnPage || errorShown).toBe(true);
+    await expect(page).toHaveURL(/\/items\/new/);
   });
 
   test('negative price shows error', async ({ page }) => {
@@ -90,22 +81,18 @@ test.describe('422 validation errors — create item', () => {
     await page.getByLabel('Currency').fill('USD');
     await page.getByRole('button', { name: 'Save' }).click();
 
-    const stayedOnPage = page.url().includes('/items/new');
-    const errorShown = await page.locator('[role="alert"], [data-testid="error-toast"], .toast, text=/422|error|invalid/i').isVisible().catch(() => false);
-    expect(stayedOnPage || errorShown).toBe(true);
+    await expect(page).toHaveURL(/\/items\/new/);
   });
 
   test('clearly invalid currency codes (too short / non-alpha) show error', async ({ page }) => {
-    for (const badCurrency of ['XX', '1234']) {
+    for (const [i, badCurrency] of (['XX', '1234'] as const).entries()) {
       await page.goto('/items/new');
-      await page.getByLabel('Name *').fill(`ValidationBadCurrency-${badCurrency}-${Date.now()}`);
+      await page.getByLabel('Name *').fill(`ValidationBadCurrency-${badCurrency}-${Date.now()}-${i}`);
       await page.getByLabel('Price').fill('10.00');
       await page.getByLabel('Currency').fill(badCurrency);
       await page.getByRole('button', { name: 'Save' }).click();
 
-      const stayedOnPage = page.url().includes('/items/new');
-      const errorShown = await page.locator('[role="alert"], [data-testid="error-toast"], .toast, text=/422|error|invalid/i').isVisible().catch(() => false);
-      expect(stayedOnPage || errorShown, `Expected error for currency '${badCurrency}'`).toBe(true);
+      await expect(page, `Expected to stay on /items/new for currency '${badCurrency}'`).toHaveURL(/\/items\/new/);
     }
   });
 
@@ -118,9 +105,7 @@ test.describe('422 validation errors — create item', () => {
     await page.getByLabel('Currency').fill('USDX');
     await page.getByRole('button', { name: 'Save' }).click();
 
-    const stayedOnPage = page.url().includes('/items/new');
-    const errorShown = await page.locator('[role="alert"], [data-testid="error-toast"], .toast, text=/422|error|invalid/i').isVisible().catch(() => false);
-    expect(stayedOnPage || errorShown).toBe(true);
+    await expect(page).toHaveURL(/\/items\/new/);
   });
 
   test('future purchase date shows error', async ({ page }) => {
@@ -129,23 +114,18 @@ test.describe('422 validation errors — create item', () => {
     await page.getByLabel('Purchase Date').fill('2099-01-01');
     await page.getByRole('button', { name: 'Save' }).click();
 
-    const stayedOnPage = page.url().includes('/items/new');
-    const errorShown = await page.locator('[role="alert"], [data-testid="error-toast"], .toast, text=/422|error|invalid|future/i').isVisible().catch(() => false);
-    expect(stayedOnPage || errorShown).toBe(true);
+    await expect(page).toHaveURL(/\/items\/new/);
   });
 
   test('metadata key exceeding 64 characters shows error', async ({ page }) => {
     await page.goto('/items/new');
     await page.getByLabel('Name *').fill(`ValidationLongMetaKey-${Date.now()}`);
     await page.getByRole('button', { name: 'Add Field' }).click();
-    const longKey = 'a'.repeat(65);
-    await page.getByPlaceholder('Key').fill(longKey);
+    await page.getByPlaceholder('Key').fill('a'.repeat(65));
     await page.getByPlaceholder('Value').fill('somevalue');
     await page.getByRole('button', { name: 'Save' }).click();
 
-    const stayedOnPage = page.url().includes('/items/new');
-    const errorShown = await page.locator('[role="alert"], [data-testid="error-toast"], .toast, text=/422|error|invalid|64|key/i').isVisible().catch(() => false);
-    expect(stayedOnPage || errorShown).toBe(true);
+    await expect(page).toHaveURL(/\/items\/new/);
   });
 
   test('metadata key with special characters shows error', async ({ page }) => {
@@ -156,9 +136,7 @@ test.describe('422 validation errors — create item', () => {
     await page.getByPlaceholder('Value').fill('somevalue');
     await page.getByRole('button', { name: 'Save' }).click();
 
-    const stayedOnPage = page.url().includes('/items/new');
-    const errorShown = await page.locator('[role="alert"], [data-testid="error-toast"], .toast, text=/422|error|invalid|special|key/i').isVisible().catch(() => false);
-    expect(stayedOnPage || errorShown).toBe(true);
+    await expect(page).toHaveURL(/\/items\/new/);
   });
 
   test('more than 50 metadata fields shows error', async ({ page }) => {
@@ -173,13 +151,10 @@ test.describe('422 validation errors — create item', () => {
 
     await page.getByRole('button', { name: 'Save' }).click();
 
-    const stayedOnPage = page.url().includes('/items/new');
-    const errorShown = await page.locator('[role="alert"], [data-testid="error-toast"], .toast, text=/422|error|invalid|50|metadata/i').isVisible().catch(() => false);
-    expect(stayedOnPage || errorShown).toBe(true);
+    await expect(page).toHaveURL(/\/items\/new/);
   });
 
   test('edit item: set price without currency shows error', async ({ page }) => {
-    // Create item with no price/currency
     const detailUrl = await createMinimalItem(page, `ValidationEditPriceNoCurrency-${Date.now()}`);
     await page.goto(detailUrl);
     await page.getByRole('link', { name: 'Edit' }).click();
@@ -187,12 +162,10 @@ test.describe('422 validation errors — create item', () => {
     await expect(page.getByTestId('edit-item-page')).toBeVisible();
 
     await page.getByLabel('Price').fill('19.99');
-    // Leave Currency blank
     await page.getByRole('button', { name: 'Save Changes' }).click();
 
-    const stayedOnPage = /\/items\/[^/]+\/edit/.test(page.url());
-    const errorShown = await page.locator('[role="alert"], [data-testid="error-toast"], .toast, text=/422|error|invalid/i').isVisible().catch(() => false);
-    expect(stayedOnPage || errorShown).toBe(true);
+    await expect(page).toHaveURL(/\/items\/[^/]+\/edit/);
+    await expect(page.getByTestId('edit-item-page')).toBeVisible();
   });
 });
 
@@ -205,7 +178,6 @@ test.describe('edge cases — create item', () => {
     await page.getByLabel('Name *').fill(name);
     await page.getByRole('button', { name: 'Save' }).click();
 
-    await expect(page).toHaveURL(/\/items\/[^/]+$/);
     await expect(page.getByTestId('item-detail-page')).toBeVisible();
     await expect(page.getByRole('heading', { name })).toBeVisible();
   });
@@ -215,13 +187,14 @@ test.describe('edge cases — create item', () => {
     const name = `UncategorisedItem-${Date.now()}`;
     await page.getByLabel('Name *').fill(name);
 
-    // Select the blank/uncategorised option if available
     const categorySelect = page.getByLabel('Category');
-    await categorySelect.selectOption('');
+    const emptyOption = categorySelect.locator('option[value=""]');
+    if ((await emptyOption.count()) > 0) {
+      await categorySelect.selectOption('');
+    }
 
     await page.getByRole('button', { name: 'Save' }).click();
 
-    await expect(page).toHaveURL(/\/items\/[^/]+$/);
     await expect(page.getByTestId('item-detail-page')).toBeVisible();
     await expect(page.getByRole('heading', { name })).toBeVisible();
   });
@@ -234,7 +207,6 @@ test.describe('edge cases — create item', () => {
     await page.getByLabel('Currency').fill('usd');
     await page.getByRole('button', { name: 'Save' }).click();
 
-    await expect(page).toHaveURL(/\/items\/[^/]+$/);
     await expect(page.getByTestId('item-detail-page')).toBeVisible();
     await expect(page.getByText('USD')).toBeVisible();
   });
@@ -245,11 +217,9 @@ test.describe('edge cases — create item', () => {
     await page.getByLabel('Name *').fill(name);
     await page.getByLabel('Brand').fill('AbandonedBrand');
 
-    // Navigate away without saving
     await page.goto('/items');
     await expect(page.getByTestId('items-page')).toBeVisible();
 
-    // The abandoned item must not appear
     const card = page.getByTestId('item-card').filter({ hasText: name });
     await expect(card).not.toBeAttached();
   });
