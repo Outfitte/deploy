@@ -82,7 +82,7 @@ test.describe('archive lifecycle — happy path', () => {
 
   // BUG (frontend): ItemsPage passes isArchived={status === 'archived'} to ItemCard, so items
   // shown in the 'All' filter always receive isArchived=false regardless of their actual status.
-  // No archived indicator is rendered on cards when viewing 'All'. Tracked in GitHub issue #22.
+  // No archived indicator is rendered on cards when viewing 'All'. Tracked in Outfitte/frontend#115.
   test.skip('all filter shows archived item with archived indicator', async ({ page }) => {
     await page.goto('/items');
     await switchStatusFilter(page, 'All');
@@ -96,7 +96,7 @@ test.describe('archive lifecycle — happy path', () => {
   // BUG (backend): itemResponse in item.go does not include the 'status' field.
   // ItemDetailPage initialises isArchived from item.status === 'archived', which is always
   // undefined, so the page always shows the Archive button on fresh load — even for archived
-  // items. Tracked in GitHub issue #20.
+  // items. Tracked in Outfitte/backend#498.
   test.skip('item detail shows archived state and Unarchive button on fresh page load', async ({ page }) => {
     await navigateToItem(page);
 
@@ -167,7 +167,7 @@ test.describe('archive lifecycle — happy path', () => {
 
   // BUG (backend): itemResponse does not include a 'dispose_reason' field, and the frontend
   // Item type has no such property. Disposed items cannot show their disposal reason.
-  // Tracked in GitHub issue #21.
+  // Tracked in Outfitte/backend#499.
   test.skip('disposed item shows disposal reason in archived filter', async ({ page }) => {
     await page.goto('/items');
     await switchStatusFilter(page, 'Archived');
