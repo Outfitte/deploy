@@ -96,8 +96,10 @@ test.describe('422 validation errors — create item', () => {
     }
   });
 
-  // Skipped: backend accepts 4-character invalid currency codes (e.g. 'USDX') without error.
-  // https://github.com/Outfitte/backend/issues/496
+  // Skipped: the currency input has maxLength={3}, so Playwright's fill('USDX') is silently
+  // truncated to 'USD' by the browser before validation runs — the item is then created with
+  // a valid currency. This is a frontend UX bug (paste truncation without user feedback).
+  // https://github.com/Outfitte/frontend/issues/113
   test.skip('4-character invalid currency code shows error', async ({ page }) => {
     await page.goto('/items/new');
     await page.getByLabel('Name *').fill(`ValidationBadCurrency-USDX-${Date.now()}`);
