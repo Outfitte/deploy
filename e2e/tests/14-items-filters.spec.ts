@@ -65,12 +65,7 @@ test.describe('filters — setup', () => {
 // ─── Edge cases (before happy-path per project convention) ───────────────────
 
 test.describe('filters — edge cases', () => {
-  // BUG (frontend): when active filters produce zero results, the page shows
-  // "No items yet" + "Add your first item" instead of a "no items match filters"
-  // message. The ItemsPage renders the same empty state regardless of whether
-  // filters are active.
-  // Tracked at: https://github.com/Outfitte/frontend/issues/119
-  test.skip('no-match filter shows a "no items match" message, not the empty-state CTA', async ({ page }) => {
+  test('no-match filter shows a "no items match" message, not the empty-state CTA', async ({ page }) => {
     await page.goto('/items');
     // Footwear + Bedroom location → no active items match (B has no location)
     await page.getByLabel('Category').selectOption({ label: 'Footwear' });
