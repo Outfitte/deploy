@@ -42,7 +42,7 @@ test.describe('archive lifecycle — validation', () => {
   test('active item detail shows Archive button, not Unarchive', async ({ page }) => {
     await navigateToItem(page);
 
-    await expect(page.getByRole('button', { name: 'Archive' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Archive', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Unarchive' })).not.toBeVisible();
   });
 
@@ -54,14 +54,14 @@ test.describe('archive lifecycle — validation', () => {
     await page.getByRole('menuitem', { name: 'Archive' }).click();
     await expect(page.getByText('Item archived')).toBeVisible();
 
-    // Switch to archived filter and verify context menu
-    await switchStatusFilter(page, 'Archived');
+    // Navigate fresh to the archived filter to avoid React Query refetch race
+    await page.goto('/items?status=archived');
     const archivedCard = page.getByTestId('item-card').filter({ hasText: ITEM_NAME });
     await expect(archivedCard).toBeVisible();
     await archivedCard.getByRole('button', { name: 'Item options' }).click();
 
     await expect(page.getByRole('menuitem', { name: 'Unarchive' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Archive' })).not.toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Archive', exact: true })).not.toBeVisible();
 
     // Press Escape to close the menu without acting
     await page.keyboard.press('Escape');
@@ -80,10 +80,7 @@ test.describe('archive lifecycle — happy path', () => {
     await expect(card).toBeVisible();
   });
 
-  // BUG (frontend): ItemsPage passes isArchived={status === 'archived'} to ItemCard, so items
-  // shown in the 'All' filter always receive isArchived=false regardless of their actual status.
-  // No archived indicator is rendered on cards when viewing 'All'. Tracked in Outfitte/frontend#115.
-  test.skip('all filter shows archived item with archived indicator', async ({ page }) => {
+  test('all filter shows archived item with archived indicator', async ({ page }) => {
     await page.goto('/items');
     await switchStatusFilter(page, 'All');
 
@@ -93,15 +90,11 @@ test.describe('archive lifecycle — happy path', () => {
     await expect(card.getByText(/archived/i)).toBeVisible();
   });
 
-  // BUG (backend): itemResponse in item.go does not include the 'status' field.
-  // ItemDetailPage initialises isArchived from item.status === 'archived', which is always
-  // undefined, so the page always shows the Archive button on fresh load — even for archived
-  // items. Tracked in Outfitte/backend#498.
-  test.skip('item detail shows archived state and Unarchive button on fresh page load', async ({ page }) => {
+  test('item detail shows archived state and Unarchive button on fresh page load', async ({ page }) => {
     await navigateToItem(page);
 
     await expect(page.getByRole('button', { name: 'Unarchive' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Archive' })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Archive', exact: true })).not.toBeVisible();
   });
 
   test('unarchive via context menu in archived list', async ({ page }) => {
@@ -126,7 +119,7 @@ test.describe('archive lifecycle — happy path', () => {
     // Verify detail page shows Archive (not Unarchive) — item is active
     await page.getByRole('link', { name: `View ${ITEM_NAME}` }).click();
     await expect(page.getByTestId('item-detail-page')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Archive' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Archive', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Unarchive' })).not.toBeVisible();
   });
 
@@ -138,12 +131,10 @@ test.describe('archive lifecycle — happy path', () => {
 
     // In-session state update: Archive button swaps to Unarchive
     await expect(page.getByRole('button', { name: 'Unarchive' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Archive' })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Archive', exact: true })).not.toBeVisible();
   });
 
   test('dispose archived item from detail page with reason donated', async ({ page }) => {
-    // Item is archived in-session from previous test; navigate fresh — detail still shows
-    // Archive due to bug, but Dispose button is always visible regardless.
     await navigateToItem(page);
 
     await page.getByRole('button', { name: 'Dispose' }).click();
@@ -165,9 +156,9 @@ test.describe('archive lifecycle — happy path', () => {
     await expect(card).toBeVisible();
   });
 
-  // BUG (backend): itemResponse does not include a 'dispose_reason' field, and the frontend
-  // Item type has no such property. Disposed items cannot show their disposal reason.
-  // Tracked in Outfitte/backend#499.
+  // BUG (frontend): Item type has no dispose_reason field and ItemCard/ItemDetailPage do not
+  // render it. Backend returns dispose_reason (Outfitte/backend#499 fixed) but frontend
+  // rendering is still missing. Tracked in Outfitte/frontend#117.
   test.skip('disposed item shows disposal reason in archived filter', async ({ page }) => {
     await page.goto('/items');
     await switchStatusFilter(page, 'Archived');
