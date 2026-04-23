@@ -12,13 +12,10 @@ const LOCATION_NAME = 'Filter-E2E-Bedroom';
 
 async function getCardIndex(page: Page, name: string): Promise<number> {
   await page.getByTestId('item-card').filter({ hasText: name }).waitFor({ state: 'visible' });
-  const cards = page.getByTestId('item-card');
-  const count = await cards.count();
-  for (let i = 0; i < count; i++) {
-    const text = await cards.nth(i).textContent();
-    if (text?.includes(name)) return i;
-  }
-  return -1;
+  return page.getByTestId('item-card').evaluateAll(
+    (cards, n) => cards.findIndex((c) => c.textContent?.includes(n)),
+    name
+  );
 }
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
@@ -38,6 +35,7 @@ test.describe('filters — setup', () => {
     await page.goto('/items/new');
     await page.getByLabel('Name *').fill(ITEM_A);
     await page.getByLabel('Category').selectOption({ label: 'Tops' });
+    // Root-level location has no em-dash prefix, so plain label matching is safe here.
     await page.getByLabel('Location').selectOption({ label: LOCATION_NAME });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByTestId('item-detail-page')).toBeVisible();
@@ -55,11 +53,31 @@ test.describe('filters — setup', () => {
     await page.goto('/items/new');
     await page.getByLabel('Name *').fill(ITEM_C);
     await page.getByLabel('Category').selectOption({ label: 'Tops' });
+    // Root-level location has no em-dash prefix, so plain label matching is safe here.
     await page.getByLabel('Location').selectOption({ label: LOCATION_NAME });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByTestId('item-detail-page')).toBeVisible();
     await page.getByRole('button', { name: 'Archive' }).click();
     await expect(page.getByText('Item archived')).toBeVisible();
+  });
+});
+
+// ─── Edge cases (before happy-path per project convention) ───────────────────
+
+test.describe('filters — edge cases', () => {
+  // BUG (frontend): when active filters produce zero results, the page shows
+  // "No items yet" + "Add your first item" instead of a "no items match filters"
+  // message. The ItemsPage renders the same empty state regardless of whether
+  // filters are active.
+  // Tracked at: https://github.com/Outfitte/frontend/issues/119
+  test.skip('no-match filter shows a "no items match" message, not the empty-state CTA', async ({ page }) => {
+    await page.goto('/items');
+    // Footwear + Bedroom location → no active items match (B has no location)
+    await page.getByLabel('Category').selectOption({ label: 'Footwear' });
+    // Root-level location has no em-dash prefix, so plain label matching is safe here.
+    await page.getByLabel('Location').selectOption({ label: LOCATION_NAME });
+    await expect(page.getByText('No items yet')).not.toBeVisible();
+    await expect(page.getByText(/no items match/i)).toBeVisible();
   });
 });
 
@@ -115,6 +133,7 @@ test.describe('filters — category', () => {
     await page.getByLabel('Category').selectOption({ label: 'Footwear' });
     await expect(page.getByTestId('item-card').filter({ hasText: ITEM_B })).toBeVisible();
     await expect(page.getByTestId('item-card').filter({ hasText: ITEM_A })).not.toBeVisible();
+    await expect(page.getByTestId('item-card').filter({ hasText: ITEM_C })).not.toBeVisible();
   });
 });
 
@@ -123,6 +142,7 @@ test.describe('filters — category', () => {
 test.describe('filters — location', () => {
   test('Bedroom location filter shows A, excludes B (no location) and C (archived)', async ({ page }) => {
     await page.goto('/items');
+    // Root-level location has no em-dash prefix, so plain label matching is safe here.
     await page.getByLabel('Location').selectOption({ label: LOCATION_NAME });
     await expect(page.getByTestId('item-card').filter({ hasText: ITEM_A })).toBeVisible();
     await expect(page.getByTestId('item-card').filter({ hasText: ITEM_B })).not.toBeVisible();
@@ -202,34 +222,18 @@ test.describe('filters — clear', () => {
   });
 });
 
-// ─── Edge cases ───────────────────────────────────────────────────────────────
-
-test.describe('filters — edge cases', () => {
-  // BUG (frontend): when active filters produce zero results, the page shows
-  // "No items yet" + "Add your first item" instead of a "no items match filters"
-  // message. The ItemsPage renders the same empty state regardless of whether
-  // filters are active.
-  // Tracked at: https://github.com/Outfitte/frontend/issues/119
-  test.skip('no-match filter shows a "no items match" message, not the empty-state CTA', async ({ page }) => {
-    await page.goto('/items');
-    // Footwear + Bedroom location → no active items match (B has no location)
-    await page.getByLabel('Category').selectOption({ label: 'Footwear' });
-    await page.getByLabel('Location').selectOption({ label: LOCATION_NAME });
-    await expect(page.getByText('No items yet')).not.toBeVisible();
-    await expect(page.getByText(/no items match/i)).toBeVisible();
-  });
-});
-
 // ─── Teardown ─────────────────────────────────────────────────────────────────
 
 test.describe('filters — teardown', () => {
   test('delete active items A and B', async ({ page }) => {
     await page.goto('/items');
+    await expect(page.getByTestId('item-card').filter({ hasText: ITEM_A })).toBeVisible();
     await page.getByRole('link', { name: `View ${ITEM_A}` }).click();
     await page.getByRole('button', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'Confirm delete' }).click();
     await expect(page).toHaveURL(/\/items$/);
 
+    await expect(page.getByTestId('item-card').filter({ hasText: ITEM_B })).toBeVisible();
     await page.getByRole('link', { name: `View ${ITEM_B}` }).click();
     await page.getByRole('button', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'Confirm delete' }).click();
@@ -238,6 +242,7 @@ test.describe('filters — teardown', () => {
 
   test('delete archived item C', async ({ page }) => {
     await page.goto('/items?status=archived');
+    await expect(page.getByTestId('item-card').filter({ hasText: ITEM_C })).toBeVisible();
     await page.getByRole('link', { name: `View ${ITEM_C}` }).click();
     await page.getByRole('button', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'Confirm delete' }).click();
