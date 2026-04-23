@@ -156,10 +156,7 @@ test.describe('archive lifecycle — happy path', () => {
     await expect(card).toBeVisible();
   });
 
-  // BUG (frontend): Item type has no dispose_reason field and ItemCard/ItemDetailPage do not
-  // render it. Backend returns dispose_reason (Outfitte/backend#499 fixed) but frontend
-  // rendering is still missing. Tracked in Outfitte/frontend#117.
-  test.skip('disposed item shows disposal reason in archived filter', async ({ page }) => {
+  test('disposed item shows disposal reason in archived filter', async ({ page }) => {
     await page.goto('/items');
     await switchStatusFilter(page, 'Archived');
 
