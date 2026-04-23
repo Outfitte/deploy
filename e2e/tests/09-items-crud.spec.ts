@@ -183,4 +183,16 @@ test.describe('item CRUD happy path', () => {
     const deletedCard = page.getByTestId('item-card').filter({ hasText: 'Blue Oxford Shirt (Updated)' });
     await expect(deletedCard).not.toBeAttached();
   });
+
+  test('delete Test Wardrobe location — clean up after item CRUD', async ({ page }) => {
+    await page.goto('/locations');
+    const node = page.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Test Wardrobe' });
+    await node.hover();
+    await node.getByRole('button', { name: 'More options' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await expect(page.getByRole('alertdialog')).toBeVisible();
+    await page.getByRole('button', { name: 'Delete' }).click();
+    await expect(page.getByText('Location deleted').first()).toBeVisible();
+    await expect(page.getByText('No locations yet')).toBeVisible();
+  });
 });
