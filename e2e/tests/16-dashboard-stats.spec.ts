@@ -22,13 +22,14 @@ test.describe('dashboard stats — setup', () => {
   });
 });
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
+// ─── Validation (boundary cases before happy-path) ────────────────────────────
 
-test.describe('dashboard stats — empty state', () => {
-  test('fresh account shows "No items yet" empty state with CTA', async ({ page }) => {
+test.describe('dashboard stats — validation', () => {
+  test('fresh account: stat grid is not rendered and empty-state CTA is visible', async ({ page }) => {
     await loginAs(page, creds.email, creds.password);
     await page.goto('/');
     await expect(page.getByTestId('dashboard-page')).toBeVisible();
+    await expect(page.getByTestId('stat-total-items')).not.toBeVisible();
     await expect(page.getByText('No items yet')).toBeVisible();
     await expect(page.getByRole('link', { name: 'Add your first item' })).toBeVisible();
   });
@@ -37,11 +38,12 @@ test.describe('dashboard stats — empty state', () => {
 // ─── Quick actions ────────────────────────────────────────────────────────────
 
 test.describe('dashboard stats — quick actions', () => {
-  test('"Add item" quick action navigates to /items/new', async ({ page }) => {
+  test('"Add item" quick action navigates to /items/new and renders the create form', async ({ page }) => {
     await loginAs(page, creds.email, creds.password);
     await page.goto('/');
     await page.getByRole('link', { name: 'Add item' }).click();
     await expect(page).toHaveURL(/\/items\/new/);
+    await expect(page.getByTestId('create-item-page')).toBeVisible();
   });
 });
 
@@ -106,7 +108,16 @@ test.describe('dashboard stats — location count', () => {
 
 // ─── Wardrobe value ───────────────────────────────────────────────────────────
 
-test.describe('dashboard stats — wardrobe value setup', () => {
+test.describe('dashboard stats — wardrobe value validation', () => {
+  test('wardrobe value shows "—" when active items have no prices', async ({ page }) => {
+    // Pre-condition: ITEM_1 and ITEM_2 are active but have no purchase price.
+    await loginAs(page, creds.email, creds.password);
+    await page.goto('/');
+    await expect(page.getByTestId('stat-wardrobe-value')).toContainText('—');
+  });
+});
+
+test.describe('dashboard stats — wardrobe value USD setup', () => {
   test('create 2 items with USD prices', async ({ page }) => {
     await loginAs(page, creds.email, creds.password);
     for (const [name, price] of [[ITEM_USD_A, '50.00'], [ITEM_USD_B, '75.00']] as const) {
@@ -120,14 +131,16 @@ test.describe('dashboard stats — wardrobe value setup', () => {
   });
 });
 
-test.describe('dashboard stats — wardrobe value', () => {
+test.describe('dashboard stats — wardrobe value same currency', () => {
   test('same currency: dashboard shows combined total ($125.00)', async ({ page }) => {
     await loginAs(page, creds.email, creds.password);
     await page.goto('/');
     await expect(page.getByTestId('stat-wardrobe-value')).toContainText('$125.00');
   });
+});
 
-  test('different currencies: dashboard shows per-currency breakdown', async ({ page }) => {
+test.describe('dashboard stats — wardrobe value EUR setup', () => {
+  test('create item with EUR price', async ({ page }) => {
     await loginAs(page, creds.email, creds.password);
     await page.goto('/items/new');
     await page.getByLabel('Name *').fill(ITEM_EUR_A);
@@ -135,7 +148,12 @@ test.describe('dashboard stats — wardrobe value', () => {
     await page.getByLabel('Currency').fill('EUR');
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByTestId('item-detail-page')).toBeVisible();
+  });
+});
 
+test.describe('dashboard stats — wardrobe value different currencies', () => {
+  test('different currencies: dashboard shows per-currency breakdown', async ({ page }) => {
+    await loginAs(page, creds.email, creds.password);
     await page.goto('/');
     const valueCard = page.getByTestId('stat-wardrobe-value');
     await expect(valueCard).toContainText('$125.00');
@@ -172,7 +190,7 @@ test.describe('dashboard stats — recently worn', () => {
 test.describe('dashboard stats — teardown', () => {
   test('delete active items', async ({ page }) => {
     await loginAs(page, creds.email, creds.password);
-    for (const name of [ITEM_1, ITEM_2, ITEM_USD_A, ITEM_USD_B, ITEM_EUR_A]) {
+    for (const name of [ITEM_1, ITEM_2, ITEM_USD_A, ITEM_USD_B, ITEM_EUR_A, WEAR_ITEM]) {
       await page.goto('/items');
       const card = page.getByTestId('item-card').filter({ hasText: name });
       if (await card.isVisible()) {
