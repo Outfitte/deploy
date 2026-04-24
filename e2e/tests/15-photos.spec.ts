@@ -84,8 +84,7 @@ test.describe('single photo upload', () => {
     await expect(thumbnails.nth(0)).not.toHaveClass(/ring-2/);
   });
 
-  // Skipped: frontend#122 — photo delete silently fails: nginx static-file regex intercepts DELETE requests for .jpg URLs
-  test.skip('delete one photo from edit page — one photo remains, no thumbnails', async ({ page }) => {
+  test('delete one photo from edit page — one photo remains, no thumbnails', async ({ page }) => {
     await page.goto('/items');
     await page.getByRole('link', { name: new RegExp('View ' + PHOTO_ITEM) }).click();
     await page.getByRole('link', { name: 'Edit' }).click();
@@ -106,8 +105,7 @@ test.describe('single photo upload', () => {
     await expect(page.getByTestId('photo-thumbnail')).toHaveCount(0);
   });
 
-  // Skipped: frontend#122 — photo delete silently fails: nginx static-file regex intercepts DELETE requests for .jpg URLs
-  test.skip('delete last photo — detail page shows placeholder', async ({ page }) => {
+  test('delete last photo — detail page shows placeholder', async ({ page }) => {
     await page.goto('/items');
     await page.getByRole('link', { name: new RegExp('View ' + PHOTO_ITEM) }).click();
     await page.getByRole('link', { name: 'Edit' }).click();
@@ -143,8 +141,7 @@ test.describe('multiple photos during creation', () => {
 });
 
 test.describe('photo URL accessibility', () => {
-  // Skipped: frontend#121 — frontend constructs /api/photos/ URLs which nginx's static-file rule intercepts instead of proxying to the backend
-  test.skip('main photo src uses /media/ path and returns 200', async ({ page }) => {
+  test('main photo src uses /media/ path and returns 200', async ({ page }) => {
     await page.goto('/items');
     await page.getByRole('link', { name: new RegExp('View ' + PHOTO_ITEM_MULTI) }).click();
     await expect(page.getByTestId('item-detail-page')).toBeVisible();
@@ -155,7 +152,15 @@ test.describe('photo URL accessibility', () => {
     expect(src).toBeTruthy();
     expect(src).toMatch(/\/media\//);
 
-    const response = await page.request.get(src!);
+    // Media endpoint requires JWT; exchange the refresh token (in localStorage) for a fresh access token
+    const refreshToken = await page.evaluate(() => localStorage.getItem('refresh_token'));
+    const tokenResponse = await page.request.post('/api/auth/refresh', {
+      data: { refresh_token: refreshToken },
+    });
+    const { access_token } = await tokenResponse.json();
+    const response = await page.request.get(src!, {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
     expect(response.status()).toBe(200);
   });
 });
