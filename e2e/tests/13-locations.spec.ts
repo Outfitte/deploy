@@ -122,24 +122,24 @@ test.describe('locations — validation', () => {
     await page.getByRole('button', { name: 'Cancel' }).click();
   });
 
-  test('delete location with children — conflict error shown', async ({ page }) => {
+  test('delete location with children — specific error message shown', async ({ page }) => {
     await page.goto('/locations');
     await openContextMenu(page, 'Bedroom');
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await expect(page.getByRole('alertdialog')).toBeVisible();
     await page.getByRole('button', { name: 'Delete' }).click();
-    await expect(page.getByRole('alertdialog').getByText(/conflict/i)).toBeVisible();
+    await expect(page.getByRole('alertdialog').getByText(/has child locations/i)).toBeVisible();
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByRole('alertdialog')).not.toBeVisible();
   });
 
-  test('delete location with assigned items — conflict error shown', async ({ page }) => {
+  test('delete location with assigned items — specific error message shown', async ({ page }) => {
     await page.goto('/locations');
     await openContextMenu(page, 'Top Shelf');
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await expect(page.getByRole('alertdialog')).toBeVisible();
     await page.getByRole('button', { name: 'Delete' }).click();
-    await expect(page.getByRole('alertdialog').getByText(/conflict/i)).toBeVisible();
+    await expect(page.getByRole('alertdialog').getByText(/has assigned items/i)).toBeVisible();
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByRole('alertdialog')).not.toBeVisible();
   });
