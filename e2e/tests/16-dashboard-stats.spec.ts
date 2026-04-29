@@ -162,10 +162,10 @@ test.describe('dashboard stats — wardrobe value different currencies', () => {
 });
 
 // ─── Recently worn ────────────────────────────────────────────────────────────
-// Skipped: dashboard has no "recently worn" stat — it only shows "recently added"
-// (most recently created item by created_at). The feature to track the last worn
-// item is not implemented.
-// Bug filed: https://github.com/Outfitte/frontend/issues/126
+// Skipped: DashboardPage crashes when 2+ items exist because it wrongly reads
+// item.last_worn_on, which is not part of the Item API response. The recently-worn
+// stat must be derived from wear-log history instead.
+// Bug filed: https://github.com/Outfitte/frontend/issues/134
 
 test.describe('dashboard stats — recently worn', () => {
   test.skip('after logging a wear, dashboard shows recently worn item', async ({ page }) => {
