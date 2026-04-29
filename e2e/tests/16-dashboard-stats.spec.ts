@@ -162,13 +162,9 @@ test.describe('dashboard stats — wardrobe value different currencies', () => {
 });
 
 // ─── Recently worn ────────────────────────────────────────────────────────────
-// Skipped: DashboardPage crashes when 2+ items exist because it wrongly reads
-// item.last_worn_on, which is not part of the Item API response. The recently-worn
-// stat must be derived from wear-log history instead.
-// Bug filed: https://github.com/Outfitte/frontend/issues/134
 
 test.describe('dashboard stats — recently worn', () => {
-  test.skip('after logging a wear, dashboard shows recently worn item', async ({ page }) => {
+  test('after logging a wear, dashboard shows recently worn item', async ({ page }) => {
     await loginAs(page, creds.email, creds.password);
     await page.goto('/items/new');
     await page.getByLabel('Name *').fill(WEAR_ITEM);
