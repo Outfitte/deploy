@@ -30,7 +30,8 @@ test.describe('unauthenticated access to F2 routes', () => {
   });
 });
 
-test.describe('return URL after login', () => {
+// Skipped: frontend does not preserve return URL after login — tracked in Outfitte/frontend#141
+test.describe.skip('return URL after login', () => {
   let email: string;
   let password: string;
 
@@ -38,8 +39,7 @@ test.describe('return URL after login', () => {
     ({ email, password } = await registerUser(browser));
   });
 
-  // Skipped: frontend does not preserve return URL — tracked in Outfitte/frontend#141
-  test.skip('login redirects back to originally requested page', async ({ page }) => {
+  test('login redirects back to originally requested page', async ({ page }) => {
     await page.goto('/items');
     await expect(page).toHaveURL(/\/login/);
 
