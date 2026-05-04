@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { registerUser, loginAs } from '../helpers';
+import { registerUser } from '../helpers';
 
 const FAKE_ITEM_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -30,8 +30,7 @@ test.describe('unauthenticated access to F2 routes', () => {
   });
 });
 
-// Skipped: frontend does not preserve return URL after login — tracked in Outfitte/frontend#141
-test.describe.skip('return URL after login', () => {
+test.describe('return URL after login', () => {
   let email: string;
   let password: string;
 
@@ -43,7 +42,11 @@ test.describe.skip('return URL after login', () => {
     await page.goto('/items');
     await expect(page).toHaveURL(/\/login/);
 
-    await loginAs(page, email, password);
+    // Fill the form on the current page (which carries the return URL) rather
+    // than navigating to /login fresh — that would drop the redirect parameter.
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Password', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/items/);
   });
 });
