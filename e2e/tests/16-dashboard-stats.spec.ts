@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 import { registerUser, loginAs } from '../helpers';
 
 const ITEM_1 = 'Dashboard-Stat-Item-1';

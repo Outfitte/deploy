@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 
 test('register new user and stay authenticated on reload', async ({ page }) => {
   const email = `user-${Date.now()}@test.local`;

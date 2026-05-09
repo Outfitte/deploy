@@ -29,8 +29,13 @@ docker compose down -v           # stop and remove volumes
 ```sh
 npm install
 npx playwright install chromium --with-deps   # first time only
-npm test                                       # run all tests
+npm test                                       # run all tests (auto-scales to CPUs/2)
 npm run test:report                            # open HTML report
+```
+
+Override worker count:
+```sh
+PLAYWRIGHT_WORKERS=4 npm test
 ```
 
 Run a single test file:
@@ -52,11 +57,11 @@ npx playwright test --grep "unauthenticated access"
 All configuration comes from `.env` (copy from `.env.example`). `JWT_SECRET` is required and must be ≥32 characters (`openssl rand -hex 32`).
 
 ### E2E test structure (`e2e/`)
-- `playwright.config.ts` — two Playwright projects: `setup` (runs `admin.setup.ts` first) then `e2e` (all numbered specs). Tests run serially (`fullyParallel: false`).
-- `tests/admin.setup.ts` — registers the first user (who becomes admin), re-enables registration, and writes credentials to `e2e/.auth/admin-creds.json` for subsequent tests.
-- `helpers.ts` — `adminLogin()` helper that reads saved credentials and logs in.
-- `global-teardown.ts` — runs `docker compose down -v` after the test suite.
-- The `webServer` config starts `docker compose up` automatically when running tests locally if a server isn't already running; on CI it expects pre-pulled images.
+- `playwright.config.ts` — single `e2e` project, `fullyParallel: false` (tests within a file stay ordered), workers auto-scale to CPUs/2 locally and default to 2 on CI.
+- `fixtures/worker-stack.ts` — worker-scoped fixture that starts an isolated Docker Compose stack (`PORT=40080+workerIndex`, project name `outfitte-wN`) for each Playwright worker, runs admin setup (register admin, enable registration, pre-register member + recipient), exposes credentials and `baseURL`, and tears down the stack with `docker compose -p outfitte-wN down -v` when the worker exits. Each worker gets its own SQLite volume (`outfitte-wN_sqlite_data`), so stacks share nothing.
+- `fixtures/index.ts` — single import point for `test` and `expect` in all spec files.
+- `helpers.ts` — pure utility functions (`loginAs`, `logout`, `registerUser`, `switchUser`). No file I/O or credential files.
+- **Spec files are self-contained**: each spec creates and cleans up its own data. No spec relies on state left by another spec.
 - **Use fixed string item names** across describe blocks (e.g. `'WearLog-E2E-Item'`), never `Date.now()` at module scope — Playwright re-evaluates each `test.describe` block in a separate worker, so dynamic names diverge between blocks.
 
 ### CI (`smoke-test.yml`)

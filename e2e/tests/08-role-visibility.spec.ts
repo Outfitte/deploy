@@ -1,9 +1,9 @@
-import { test, expect } from '@playwright/test';
-import { adminLogin, registerUser, loginAs } from '../helpers';
+import { test, expect } from '../fixtures';
+import { registerUser, loginAs } from '../helpers';
 
 test.describe('role-based settings visibility', () => {
-  test('admin sees the registration toggle', async ({ page }) => {
-    await adminLogin(page);
+  test('admin sees the registration toggle', async ({ page, adminLogin }) => {
+    await adminLogin();
     await page.goto('/settings');
     await expect(page.getByRole('switch', { name: 'Registration enabled' })).toBeVisible();
   });

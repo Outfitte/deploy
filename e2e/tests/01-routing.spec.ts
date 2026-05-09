@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 
 test('unauthenticated access to / redirects to /login', async ({ page }) => {
   await page.goto('/');

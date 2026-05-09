@@ -1,22 +1,9 @@
-import { test, expect } from '@playwright/test';
-import fs from 'fs';
-import { adminCredsFile, memberCredsFile, loginAs, logout } from '../helpers';
+import { test, expect } from '../fixtures';
+import { loginAs, logout } from '../helpers';
 
-/**
- * Theme is stored in localStorage (per browser context, not per user account).
- * Two users in separate browser contexts maintain independent theme preferences.
- * Logging out and back in must not reset the stored theme.
- *
- * Uses pre-registered admin + member accounts from admin.setup.ts to avoid
- * racing with tests that temporarily disable registration.
- */
-test('each user keeps their own theme preference across logout and login', async ({ browser }) => {
-  const { email: adminEmail, password: adminPassword } = JSON.parse(
-    fs.readFileSync(adminCredsFile, 'utf-8'),
-  );
-  const { email: memberEmail, password: memberPassword } = JSON.parse(
-    fs.readFileSync(memberCredsFile, 'utf-8'),
-  );
+test('each user keeps their own theme preference across logout and login', async ({ browser, adminCredentials, memberCredentials }) => {
+  const { email: adminEmail, password: adminPassword } = adminCredentials;
+  const { email: memberEmail, password: memberPassword } = memberCredentials;
 
   const adminContext = await browser.newContext();
   const memberContext = await browser.newContext();

@@ -1,14 +1,13 @@
 import path from 'path';
-import { test, expect } from '@playwright/test';
-import { adminLogin } from '../helpers';
+import { test, expect } from '../fixtures';
 
 const PHOTO_ITEM = 'Photo-E2E-Item';
 const PHOTO_ITEM_MULTI = 'Photo-E2E-Multi';
 const PHOTO_ITEM_NOPHOTO = 'Photo-E2E-NoPhoto';
 const FIXTURE = path.join(__dirname, '../fixtures/test-image.jpg');
 
-test.beforeEach(async ({ page }) => {
-  await adminLogin(page);
+test.beforeEach(async ({ adminLogin }) => {
+  await adminLogin();
 });
 
 test.describe('item without photo', () => {
