@@ -137,8 +137,8 @@ test.describe('filters — category', () => {
 test.describe('filters — location', () => {
   test('Bedroom location filter shows A, excludes B (no location) and C (archived)', async ({ page }) => {
     await page.goto('/items');
-    // Root-level location has no em-dash prefix, so plain label matching is safe here.
-    await page.getByLabel('Location').selectOption({ label: LOCATION_NAME });
+    // Use exact: true so Playwright doesn't substring-match item cards whose aria-label contains "Location".
+    await page.getByLabel('Location', { exact: true }).selectOption({ label: LOCATION_NAME });
     await expect(page.getByTestId('item-card').filter({ hasText: ITEM_A })).toBeVisible();
     await expect(page.getByTestId('item-card').filter({ hasText: ITEM_B })).not.toBeVisible();
     await expect(page.getByTestId('item-card').filter({ hasText: ITEM_C })).not.toBeVisible();

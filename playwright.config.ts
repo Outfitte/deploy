@@ -5,6 +5,7 @@ const BASE_URL = `http://localhost:${process.env.PORT ?? 30080}`;
 export default defineConfig({
   testDir: './e2e/tests',
   fullyParallel: false,
+  workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI
@@ -23,9 +24,15 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'e2e',
+      name: 'recipient-setup',
+      testMatch: /recipient\.setup\.ts/,
       use: { ...devices['Desktop Chrome'] },
       dependencies: ['setup'],
+    },
+    {
+      name: 'e2e',
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['setup', 'recipient-setup'],
     },
   ],
   webServer: {
