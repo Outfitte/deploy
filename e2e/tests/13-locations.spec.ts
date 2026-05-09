@@ -1,8 +1,8 @@
-import { test, expect, type Page } from '@playwright/test';
-import { adminLogin } from '../helpers';
+import { test, expect } from '../fixtures';
+import type { Page } from '@playwright/test';
 
-test.beforeEach(async ({ page }) => {
-  await adminLogin(page);
+test.beforeEach(async ({ adminLogin }) => {
+  await adminLogin();
 });
 
 const ITEM_NAME = 'Location-E2E-Item';

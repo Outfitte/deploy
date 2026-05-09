@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 import { registerUser } from '../helpers';
 
 const FAKE_ITEM_ID = '00000000-0000-0000-0000-000000000001';

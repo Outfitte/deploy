@@ -1,6 +1,5 @@
-import { test, expect } from '@playwright/test';
-import fs from 'fs';
-import { adminCredsFile, loginAs } from '../helpers';
+import { test, expect } from '../fixtures';
+import { loginAs } from '../helpers';
 
 test.describe('registration form validation', () => {
   test.beforeEach(async ({ page }) => {
@@ -25,8 +24,8 @@ test.describe('registration form validation', () => {
 });
 
 test.describe('registration server errors', () => {
-  test('duplicate email shows conflict error', async ({ page }) => {
-    const { email } = JSON.parse(fs.readFileSync(adminCredsFile, 'utf-8'));
+  test('duplicate email shows conflict error', async ({ page, adminCredentials }) => {
+    const { email } = adminCredentials;
 
     await page.goto('/register');
     await page.getByLabel('Email').fill(email);
@@ -38,11 +37,9 @@ test.describe('registration server errors', () => {
     await expect(page).toHaveURL(/\/register/);
   });
 
-  test('registration disabled shows descriptive error', async ({ page, browser }) => {
+  test('registration disabled shows descriptive error', async ({ page, browser, adminCredentials }) => {
     // Disable registration as admin, attempt to register as anon, re-enable
-    const { email: adminEmail, password: adminPassword } = JSON.parse(
-      fs.readFileSync(adminCredsFile, 'utf-8'),
-    );
+    const { email: adminEmail, password: adminPassword } = adminCredentials;
     const adminContext = await browser.newContext();
     const adminPage = await adminContext.newPage();
     await loginAs(adminPage, adminEmail, adminPassword);

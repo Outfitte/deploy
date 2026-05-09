@@ -88,6 +88,20 @@ If you need direct access to the database file or media files from the host (e.g
 
 The database file will then be at `./data/outfitte.db` and media files under `./media/`.
 
+## E2E tests
+
+Tests use Playwright with worker-scoped fixtures. Each worker spins up its own isolated Docker Compose stack on a dedicated port, so spec files run in parallel without sharing state.
+
+```sh
+npm install
+npx playwright install chromium --with-deps   # first time only
+npm test                                       # auto-scales to CPUs/2
+PLAYWRIGHT_WORKERS=4 npm test                 # explicit count
+npm run test:report                           # open HTML report
+```
+
+Each worker starts a stack on port `40080+N` (e.g. worker 0 → `40080`, worker 1 → `40081`) under project name `outfitte-wN`. Stacks are torn down automatically after each worker finishes. No pre-running stack is needed — the fixture manages everything.
+
 ## Local development (without Docker)
 
 Run the backend directly:

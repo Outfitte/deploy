@@ -1,9 +1,8 @@
 import path from 'path';
-import { test, expect } from '@playwright/test';
-import { adminLogin } from '../helpers';
+import { test, expect } from '../fixtures';
 
-test.beforeEach(async ({ page }) => {
-  await adminLogin(page);
+test.beforeEach(async ({ adminLogin }) => {
+  await adminLogin();
 });
 
 test.describe('items empty state', () => {
