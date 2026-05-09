@@ -43,8 +43,8 @@ export async function logout(page: Page) {
   await expect(page).toHaveURL(/\/login/);
 }
 
-const RECIPIENT_EMAIL = 'recipient@example.com';
-const RECIPIENT_PASSWORD = 'recipient-password-123';
+export const RECIPIENT_EMAIL = 'recipient@example.com';
+export const RECIPIENT_PASSWORD = 'recipient-password-123';
 
 export async function registerRecipient(
   page: Page,
@@ -60,17 +60,11 @@ export async function registerRecipient(
   return email;
 }
 
-export async function recipientLogin(
-  page: Page,
-  email?: string,
-  password?: string,
-) {
-  const creds = email && password
-    ? { email, password }
-    : JSON.parse(fs.readFileSync(recipientCredsFile, 'utf-8'));
+export async function recipientLogin(page: Page) {
+  const { email, password } = JSON.parse(fs.readFileSync(recipientCredsFile, 'utf-8'));
   await page.goto('/login');
-  await page.getByLabel('Email').fill(creds.email);
-  await page.getByLabel('Password', { exact: true }).fill(creds.password);
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).not.toHaveURL(/\/(login|register)/);
 }
