@@ -87,6 +87,7 @@ test.describe('single photo upload', () => {
   test('delete one photo from edit page — one photo remains, no thumbnails', async ({ page }) => {
     await page.goto('/items');
     await page.getByRole('link', { name: new RegExp('View ' + PHOTO_ITEM) }).click();
+    await expect(page.getByTestId('item-detail-page')).toBeVisible();
     await page.getByRole('link', { name: 'Edit' }).click();
     await expect(page.getByTestId('edit-item-page')).toBeVisible();
 
@@ -108,6 +109,7 @@ test.describe('single photo upload', () => {
   test('delete last photo — detail page shows placeholder', async ({ page }) => {
     await page.goto('/items');
     await page.getByRole('link', { name: new RegExp('View ' + PHOTO_ITEM) }).click();
+    await expect(page.getByTestId('item-detail-page')).toBeVisible();
     await page.getByRole('link', { name: 'Edit' }).click();
     await expect(page.getByTestId('edit-item-page')).toBeVisible();
 
