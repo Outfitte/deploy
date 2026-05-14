@@ -7,8 +7,6 @@ const ITEM2_NAME = 'Recipient-E2E-Item2';
 const OUTFIT_NAME = 'Recipient-E2E-Outfit';
 const LOCATION_NAME = 'Recipient-E2E-Location';
 
-let capturedSharedItemId = '';
-
 async function selectLocation(page: Page, locationLabel: string) {
   await page.getByLabel('Location').evaluate((el, label) => {
     const select = el as HTMLSelectElement;
@@ -150,7 +148,6 @@ test.describe('sharing-recipient — happy path', () => {
     await expect(page.getByTestId('shared-item-detail-page')).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toContainText(ITEM_NAME);
     await expect(page.getByText('BrandTest-E2E')).toBeVisible();
-    capturedSharedItemId = page.url().split('/').pop()!;
   });
 
   test('shared item detail: shared-by banner shows admin email', async ({ page, adminCredentials }) => {
@@ -284,6 +281,19 @@ test.describe('sharing-recipient — boundary cases', () => {
 test.describe('sharing-recipient — revocation', () => {
   test.describe.configure({ mode: 'serial' });
 
+  // Captured in the first test and read in the last — describe-scoped so it
+  // stays within this serial block and avoids cross-describe-block coupling.
+  let revokedItemId = '';
+
+  test('capture shared item id as recipient (before revocation)', async ({ page, recipientCredentials }) => {
+    await switchUser(page, recipientCredentials.email, recipientCredentials.password);
+    await page.goto('/shared');
+    await page.getByRole('link', { name: `View ${ITEM_NAME}`, exact: true }).click();
+    await expect(page).toHaveURL(/\/shared\/items\/[^/]+$/);
+    revokedItemId = page.url().split('/').pop()!;
+    expect(revokedItemId).not.toBe('');
+  });
+
   test('admin revokes item share', async ({ page }) => {
     await page.goto('/shares');
     await expect(page.getByTestId('outgoing-shares-page')).toBeVisible();
@@ -307,7 +317,7 @@ test.describe('sharing-recipient — revocation', () => {
 
   test('/shared/items/:id after revocation → item not found state', async ({ page, recipientCredentials }) => {
     await switchUser(page, recipientCredentials.email, recipientCredentials.password);
-    await page.goto(`/shared/items/${capturedSharedItemId}`);
+    await page.goto(`/shared/items/${revokedItemId}`);
     await expect(page.getByTestId('shared-item-detail-page')).toBeVisible();
     await expect(page.getByText('Item not found')).toBeVisible();
   });
