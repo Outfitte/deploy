@@ -1,5 +1,24 @@
 import { Browser, Page, expect } from '@playwright/test';
 
+// Returns 'Apr 22, 2026' style — matches date-fns format(date, 'MMM d, yyyy') used by the UI.
+// Uses UTC so the result matches what the backend stores regardless of the runner's local timezone.
+export function todayFormatted(): string {
+  const d = new Date();
+  const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+  const day = d.getUTCDate();
+  const year = d.getUTCFullYear();
+  return `${month} ${day}, ${year}`;
+}
+
+// Returns today's date in 'yyyy-MM-dd' format (UTC) for filling date inputs.
+export function todayInputValue(): string {
+  const d = new Date();
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export async function registerUser(browser: Browser): Promise<{ email: string; password: string }> {
   const email = `user-${Date.now()}@test.local`;
   const password = 'User1234!';

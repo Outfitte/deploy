@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures';
+import { todayFormatted } from '../helpers';
 import type { Page } from '@playwright/test';
 
 test.beforeEach(async ({ adminLogin }) => {
@@ -12,16 +13,6 @@ async function navigateToItem(page: Page) {
   await expect(page.getByRole('link', { name: `View ${ITEM_NAME}` })).toBeVisible();
   await page.getByRole('link', { name: `View ${ITEM_NAME}` }).click();
   await expect(page.getByTestId('item-detail-page')).toBeVisible();
-}
-
-// Returns 'Apr 22, 2026' style — matches date-fns format(date, 'MMM d, yyyy') used by the UI.
-// Uses UTC so the result matches what the backend stores regardless of the runner's local timezone.
-function todayFormatted(): string {
-  const d = new Date();
-  const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
-  const day = d.getUTCDate();
-  const year = d.getUTCFullYear();
-  return `${month} ${day}, ${year}`;
 }
 
 // ─── Setup ────────────────────────────────────────────────────────────────────

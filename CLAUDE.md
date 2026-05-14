@@ -63,6 +63,7 @@ All configuration comes from `.env` (copy from `.env.example`). `JWT_SECRET` is 
 - `helpers.ts` — pure utility functions (`loginAs`, `logout`, `registerUser`, `switchUser`). No file I/O or credential files.
 - **Spec files are self-contained**: each spec creates and cleans up its own data. No spec relies on state left by another spec.
 - **Use fixed string item names** across describe blocks (e.g. `'WearLog-E2E-Item'`), never `Date.now()` at module scope — Playwright re-evaluates each `test.describe` block in a separate worker, so dynamic names diverge between blocks.
+- **Navigate to cards with `exact: true`**: use `page.getByRole('link', { name: 'View ' + name, exact: true })` instead of `new RegExp('View ' + name)` — substring matching causes a strict-mode violation when one test entity name is a prefix of another (e.g. `'Outfit-E2E'` vs `'Outfit-E2E-Zero'`).
 
 ### CI (`smoke-test.yml`)
 Triggered on pushes/PRs to `main` and via `repository_dispatch` events (`backend-published`, `frontend-published`) from the backend and frontend repos. Pulls `ghcr.io/outfitte/backend:latest` and `ghcr.io/outfitte/frontend:latest` from GHCR, generates a `.env`, then runs the full Playwright suite.
