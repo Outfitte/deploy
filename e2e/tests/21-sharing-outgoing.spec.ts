@@ -97,28 +97,34 @@ test.describe('sharing — validation', () => {
     await expect(page.getByText('Share created').first()).toBeVisible();
     await expect(page.getByRole('dialog')).not.toBeVisible();
 
-    // Try to share the same item again
-    await page.getByRole('button', { name: 'Share' }).click();
-    await selectRecipientAndShare(page, recipientCredentials.email);
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-    await expect(dialog.getByText('share already exists')).toBeVisible();
-    await dialog.getByRole('button', { name: 'Cancel' }).click();
-    await expect(dialog).not.toBeVisible();
-
-    // Clean up: revoke the share so happy path starts fresh
-    await page.goto('/shares');
-    await expect(page.getByTestId('outgoing-shares-page')).toBeVisible();
-    await page.getByRole('button', { name: 'Revoke' }).first().click();
-    await expect(page.getByRole('alertdialog')).toBeVisible();
-    await page.getByRole('button', { name: 'Confirm revoke' }).click();
-    await expect(page.getByText('Share revoked').first()).toBeVisible();
+    try {
+      // Try to share the same item again → 409
+      await page.getByRole('button', { name: 'Share' }).click();
+      await selectRecipientAndShare(page, recipientCredentials.email);
+      const dialog = page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByText('share already exists')).toBeVisible();
+      await dialog.getByRole('button', { name: 'Cancel' }).click();
+      await expect(dialog).not.toBeVisible();
+    } finally {
+      // Always revoke the initial share to avoid polluting happy-path state
+      await page.goto('/shares');
+      await expect(page.getByTestId('outgoing-shares-page')).toBeVisible();
+      const itemsSection = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Items' }) });
+      await itemsSection.getByRole('button', { name: 'Revoke' }).click();
+      await expect(page.getByRole('alertdialog')).toBeVisible();
+      await page.getByRole('button', { name: 'Confirm revoke' }).click();
+      await expect(page.getByText('Share revoked').first()).toBeVisible();
+    }
   });
 });
 
-// ─── Happy path ───────────────────────────────────────────────────────────────
+// ─── Happy path (sequential, state accumulates) ──────────────────────────────
+// Pre-condition: no shares exist (validation describe cleaned up after itself)
+// mode: 'serial' prevents CI retries from running mid-chain tests in isolation
 
 test.describe('sharing — happy path', () => {
+  test.describe.configure({ mode: 'serial' });
   test('share item from item detail page → success toast, dialog closes', async ({ page, recipientCredentials }) => {
     await page.goto('/items');
     await page.getByRole('link', { name: `View ${ITEM_NAME}`, exact: true }).click();
@@ -161,7 +167,7 @@ test.describe('sharing — happy path', () => {
     const itemRow = page.getByRole('listitem').filter({ hasText: ITEM_NAME });
     await expect(itemRow).toBeVisible();
     await expect(itemRow.getByText(recipientCredentials.email)).toBeVisible();
-    await expect(itemRow.locator('.text-xs')).toBeVisible();
+    await expect(itemRow.getByText(/[A-Z][a-z]+ \d{1,2}, \d{4}/)).toBeVisible();
   });
 
   test('revoke item share → Items section removed, 2 shares remain', async ({ page }) => {
@@ -178,9 +184,10 @@ test.describe('sharing — happy path', () => {
   });
 });
 
-// ─── Edge cases ───────────────────────────────────────────────────────────────
+// ─── Edge cases (sequential, state accumulates from happy path) ───────────────
 
 test.describe('sharing — edge cases', () => {
+  test.describe.configure({ mode: 'serial' });
   test('delete shared outfit → Outfits section cleaned up server-side', async ({ page }) => {
     await page.goto('/outfits');
     await page.getByRole('link', { name: `View ${OUTFIT_NAME}`, exact: true }).click();
@@ -200,7 +207,7 @@ test.describe('sharing — edge cases', () => {
     await expect(page.getByTestId('outgoing-shares-page')).toBeVisible();
 
     let revokeBtn = page.getByRole('button', { name: 'Revoke' }).first();
-    while ((await revokeBtn.count()) > 0) {
+    for (let i = 0; i < 10 && (await revokeBtn.count()) > 0; i++) {
       await revokeBtn.click();
       await expect(page.getByRole('alertdialog')).toBeVisible();
       await page.getByRole('button', { name: 'Confirm revoke' }).click();

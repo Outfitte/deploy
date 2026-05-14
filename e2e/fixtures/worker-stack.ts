@@ -46,7 +46,7 @@ async function runAdminSetup(
   browser: Browser,
   port: number,
   workerIndex: number,
-): Promise<{ adminEmail: string; adminPassword: string; memberEmail: string; memberPassword: string }> {
+): Promise<{ adminEmail: string; adminPassword: string; memberEmail: string; memberPassword: string; recipientEmail: string; recipientPassword: string }> {
   const baseURL = `http://localhost:${port}`;
   const adminEmail = `admin-w${workerIndex}-${Date.now()}@test.local`;
   const adminPassword = 'Admin1234!';
@@ -93,7 +93,7 @@ async function runAdminSetup(
   await recipientPage.waitForURL((url) => !url.toString().includes('/register'));
   await recipientCtx.close();
 
-  return { adminEmail, adminPassword, memberEmail, memberPassword };
+  return { adminEmail, adminPassword, memberEmail, memberPassword, recipientEmail: RECIPIENT_EMAIL, recipientPassword: RECIPIENT_PASSWORD };
 }
 
 export const test = base.extend<TestFixtures, WorkerFixtures>({
