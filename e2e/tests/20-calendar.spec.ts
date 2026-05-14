@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures';
+import { todayInputValue } from '../helpers';
 import type { Page } from '@playwright/test';
 
 const OUTFIT_NAME = 'Calendar-E2E-Outfit';
@@ -65,7 +66,7 @@ function calendarDayCell(page: Page, day: number) {
 
 const DATE_1 = currentMonthDayInput(1); // 1st of current month
 const DATE_2 = currentMonthDayInput(8); // 8th of current month (or today if today < 8)
-const DATE_3 = currentMonthDayInput(31); // today
+const DATE_3 = todayInputValue(); // today
 const DATE_PREV = prevMonthDayInput(); // 15th of previous month
 
 const DAY_1 = dayOfMonth(DATE_1);
@@ -127,13 +128,13 @@ test.describe('calendar — happy path', () => {
     await page.goto('/calendar');
     await expect(page.getByTestId('calendar-page')).toBeVisible();
 
-    // Each logged date should have a button in its cell
-    await expect(calendarDayCell(page, DAY_1).getByRole('button', { name: OUTFIT_NAME })).toBeVisible();
-    await expect(calendarDayCell(page, DAY_2).getByRole('button', { name: OUTFIT_NAME })).toBeVisible();
-    await expect(calendarDayCell(page, DAY_3).getByRole('button', { name: OUTFIT_NAME })).toBeVisible();
+    // Each logged date should have a button in its cell (.first() guards against DAY_2==DAY_3 when today ≤ 8)
+    await expect(calendarDayCell(page, DAY_1).getByRole('button', { name: OUTFIT_NAME, exact: true }).first()).toBeVisible();
+    await expect(calendarDayCell(page, DAY_2).getByRole('button', { name: OUTFIT_NAME, exact: true }).first()).toBeVisible();
+    await expect(calendarDayCell(page, DAY_3).getByRole('button', { name: OUTFIT_NAME, exact: true }).first()).toBeVisible();
 
     // Total log buttons in current month = 3 (prev-month log is not fetched)
-    await expect(page.getByRole('button', { name: OUTFIT_NAME })).toHaveCount(3);
+    await expect(page.getByRole('button', { name: OUTFIT_NAME, exact: true })).toHaveCount(3);
   });
 
   test('Previous month: header updates, prev-month log appears, current-month logs gone', async ({
@@ -143,9 +144,9 @@ test.describe('calendar — happy path', () => {
     await page.getByRole('button', { name: 'Previous month' }).click();
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(prevMonthLabel());
     // Previous-month log on the 15th is now visible
-    await expect(calendarDayCell(page, 15).getByRole('button', { name: OUTFIT_NAME })).toBeVisible();
+    await expect(calendarDayCell(page, 15).getByRole('button', { name: OUTFIT_NAME, exact: true })).toBeVisible();
     // Only 1 log visible (the current-month logs are out of range)
-    await expect(page.getByRole('button', { name: OUTFIT_NAME })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: OUTFIT_NAME, exact: true })).toHaveCount(1);
   });
 
   test('Next month twice from prev: header advances, cells empty', async ({ page }) => {
@@ -154,7 +155,7 @@ test.describe('calendar — happy path', () => {
     await page.getByRole('button', { name: 'Next month' }).click();
     await page.getByRole('button', { name: 'Next month' }).click();
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(futureMonthLabel(1));
-    await expect(page.getByRole('button', { name: OUTFIT_NAME })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: OUTFIT_NAME, exact: true })).toHaveCount(0);
   });
 
   test('Today button: returns to current month with 3 logs', async ({ page }) => {
@@ -162,12 +163,12 @@ test.describe('calendar — happy path', () => {
     await page.getByRole('button', { name: 'Previous month' }).click();
     await page.getByRole('button', { name: 'Today' }).click();
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(currentMonthLabel());
-    await expect(page.getByRole('button', { name: OUTFIT_NAME })).toHaveCount(3);
+    await expect(page.getByRole('button', { name: OUTFIT_NAME, exact: true })).toHaveCount(3);
   });
 
   test('clicking a log entry navigates to the outfit detail page', async ({ page }) => {
     await page.goto('/calendar');
-    await page.getByRole('button', { name: OUTFIT_NAME }).first().click();
+    await page.getByRole('button', { name: OUTFIT_NAME, exact: true }).first().click();
     await expect(page).toHaveURL(/\/outfits\/[^/]+$/);
     await expect(page.getByTestId('outfit-detail-page')).toBeVisible();
   });
@@ -203,11 +204,12 @@ test.describe('calendar — edge cases', () => {
   }) => {
     await page.goto('/calendar');
     // Navigate back to January of current year
-    const monthsToJan = new Date().getUTCMonth(); // 0 = Jan, so N months back
+    const now = new Date();
+    const monthsToJan = now.getUTCMonth(); // 0 = Jan, so N months back
+    const currentYear = now.getUTCFullYear();
     for (let i = 0; i < monthsToJan; i++) {
       await page.getByRole('button', { name: 'Previous month' }).click();
     }
-    const currentYear = new Date().getUTCFullYear();
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(`January ${currentYear}`);
     // One more click crosses the year boundary
     await page.getByRole('button', { name: 'Previous month' }).click();
