@@ -27,6 +27,7 @@ type TestFixtures = {
   adminLogin: () => Promise<void>;
   adminCredentials: { email: string; password: string };
   memberCredentials: { email: string; password: string };
+  recipientCredentials: { email: string; password: string };
 };
 
 async function waitForHealth(url: string, timeoutMs = 60_000): Promise<void> {
@@ -148,6 +149,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 
   memberCredentials: async ({ workerStack }, use) => {
     await use({ email: workerStack.memberEmail, password: workerStack.memberPassword });
+  },
+
+  recipientCredentials: async ({ workerStack }, use) => {
+    await use({ email: workerStack.recipientEmail, password: workerStack.recipientPassword });
   },
 });
 
