@@ -1,28 +1,11 @@
 import { test, expect } from '../fixtures';
+import { todayFormatted, todayInputValue } from '../helpers';
 import type { Page } from '@playwright/test';
 
 const OUTFIT_NAME = 'OutfitWearLog-E2E';
 const OUTFIT_ZERO = 'OutfitWearLog-E2E-Zero';
 const ITEM_1 = 'OutfitWearLog-E2E-Item-1';
 const ITEM_2 = 'OutfitWearLog-E2E-Item-2';
-
-// Returns 'Apr 22, 2026' style — matches date-fns format(date, 'MMM d, yyyy') used by the UI.
-// Uses UTC so the result matches what the backend stores regardless of the runner's local timezone.
-function todayFormatted(): string {
-  const d = new Date();
-  const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
-  const day = d.getUTCDate();
-  const year = d.getUTCFullYear();
-  return `${month} ${day}, ${year}`;
-}
-
-function todayInputValue(): string {
-  const d = new Date();
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(d.getUTCDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
 
 test.beforeEach(async ({ adminLogin }) => {
   await adminLogin();
@@ -34,7 +17,7 @@ async function navigateToOutfit(page: Page, name: string) {
   await expect(page.getByTestId('outfit-detail-page')).toBeVisible();
 }
 
-// Returns only wear log list items (excludes item grid links which share the same ul > li structure)
+// Returns only wear log list items (not the item grid links, which have no Delete button)
 function wearLogEntries(page: Page) {
   return page
     .locator('[data-testid="outfit-detail-page"] li')
@@ -112,8 +95,11 @@ test.describe('outfit wear log — validation', () => {
 
 // ─── Happy path (sequential, state accumulates) ──────────────────────────────
 // Pre-condition: OUTFIT_NAME has 0 wear logs (left by setup + validation)
+// mode: 'serial' prevents CI retries from running mid-chain tests in isolation
 
 test.describe('outfit wear log — happy path', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test("Log wear button opens form with today's date defaulted", async ({ page }) => {
     await navigateToOutfit(page, OUTFIT_NAME);
     await page.getByRole('button', { name: 'Log wear' }).click();
@@ -200,6 +186,14 @@ test.describe('outfit wear log — edge cases', () => {
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.locator('[data-testid="outfit-detail-page"] form')).not.toBeVisible();
     await expect(page.getByTestId('outfit-wear-count')).toHaveText('1');
+
+    // Verify no per-item wear logs were created for items that don't belong to this outfit
+    for (const itemName of [ITEM_1, ITEM_2]) {
+      await page.goto('/items');
+      await page.getByRole('link', { name: 'View ' + itemName, exact: true }).click();
+      await expect(page.getByTestId('item-detail-page')).toBeVisible();
+      await expect(page.getByTestId('wear-count')).toHaveText('0');
+    }
   });
 
   test('two outfit wears on same date with different notes both appear in history', async ({
@@ -228,9 +222,9 @@ test.describe('outfit wear log — cleanup', () => {
       await page.goto('/outfits');
       const card = page.getByTestId('outfit-card').filter({ hasText: name });
       if ((await card.count()) === 0) continue;
-      await page.getByRole('link', { name: new RegExp('View ' + name) }).click();
+      await page.getByRole('link', { name: 'View ' + name, exact: true }).click();
       await expect(page.getByTestId('outfit-detail-page')).toBeVisible();
-      await page.getByRole('button', { name: 'Delete' }).click();
+      await page.getByRole('button', { name: 'Delete', exact: true }).click();
       await expect(page.getByRole('alertdialog')).toBeVisible();
       await page.getByRole('button', { name: 'Confirm delete' }).click();
       await expect(page).toHaveURL(/\/outfits$/);
@@ -240,7 +234,7 @@ test.describe('outfit wear log — cleanup', () => {
       await page.goto('/items');
       const card = page.getByTestId('item-card').filter({ hasText: name });
       if ((await card.count()) === 0) continue;
-      await page.getByRole('link', { name: new RegExp('View ' + name) }).click();
+      await page.getByRole('link', { name: 'View ' + name, exact: true }).click();
       await page.getByRole('button', { name: 'Delete' }).click();
       await page.getByRole('button', { name: 'Confirm delete' }).click();
       await expect(page).toHaveURL(/\/items$/);
