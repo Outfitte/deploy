@@ -206,13 +206,14 @@ test.describe('sharing — edge cases', () => {
     await page.goto('/shares');
     await expect(page.getByTestId('outgoing-shares-page')).toBeVisible();
 
-    let revokeBtn = page.getByRole('button', { name: 'Revoke' }).first();
+    let revokeBtn = page.getByRole('button', { name: 'Revoke', exact: true }).first();
     for (let i = 0; i < 10 && (await revokeBtn.count()) > 0; i++) {
       await revokeBtn.click();
       await expect(page.getByRole('alertdialog')).toBeVisible();
       await page.getByRole('button', { name: 'Confirm revoke' }).click();
+      await expect(page.getByRole('alertdialog')).not.toBeVisible();
       await expect(page.getByText('Share revoked').first()).toBeVisible();
-      revokeBtn = page.getByRole('button', { name: 'Revoke' }).first();
+      revokeBtn = page.getByRole('button', { name: 'Revoke', exact: true }).first();
     }
 
     await expect(page.getByText("You haven't shared anything yet")).toBeVisible();
