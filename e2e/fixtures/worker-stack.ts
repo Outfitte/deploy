@@ -27,6 +27,7 @@ type TestFixtures = {
   adminLogin: () => Promise<void>;
   adminCredentials: { email: string; password: string };
   memberCredentials: { email: string; password: string };
+  recipientCredentials: { email: string; password: string };
 };
 
 async function waitForHealth(url: string, timeoutMs = 60_000): Promise<void> {
@@ -45,7 +46,7 @@ async function runAdminSetup(
   browser: Browser,
   port: number,
   workerIndex: number,
-): Promise<{ adminEmail: string; adminPassword: string; memberEmail: string; memberPassword: string }> {
+): Promise<{ adminEmail: string; adminPassword: string; memberEmail: string; memberPassword: string; recipientEmail: string; recipientPassword: string }> {
   const baseURL = `http://localhost:${port}`;
   const adminEmail = `admin-w${workerIndex}-${Date.now()}@test.local`;
   const adminPassword = 'Admin1234!';
@@ -92,7 +93,7 @@ async function runAdminSetup(
   await recipientPage.waitForURL((url) => !url.toString().includes('/register'));
   await recipientCtx.close();
 
-  return { adminEmail, adminPassword, memberEmail, memberPassword };
+  return { adminEmail, adminPassword, memberEmail, memberPassword, recipientEmail: RECIPIENT_EMAIL, recipientPassword: RECIPIENT_PASSWORD };
 }
 
 export const test = base.extend<TestFixtures, WorkerFixtures>({
@@ -148,6 +149,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 
   memberCredentials: async ({ workerStack }, use) => {
     await use({ email: workerStack.memberEmail, password: workerStack.memberPassword });
+  },
+
+  recipientCredentials: async ({ workerStack }, use) => {
+    await use({ email: workerStack.recipientEmail, password: workerStack.recipientPassword });
   },
 });
 
