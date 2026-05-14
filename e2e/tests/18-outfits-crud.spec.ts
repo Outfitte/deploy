@@ -57,10 +57,13 @@ test.describe('outfit CRUD happy path', () => {
 
     for (const itemName of [ITEM_1, ITEM_2, ITEM_3]) {
       await page.getByRole('button', { name: 'Add item' }).click();
-      await expect(page.getByRole('dialog')).toBeVisible();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
       await page.getByPlaceholder('Search items…').fill(itemName);
-      await page.getByRole('button', { name: 'Add' }).click();
-      await expect(page.getByRole('dialog')).not.toBeVisible();
+      // Wait for the filtered result to appear before clicking Add
+      await expect(dialog.getByText(itemName)).toBeVisible();
+      await dialog.getByRole('button', { name: 'Add' }).click();
+      await expect(dialog).not.toBeVisible();
       // Wait for the item to appear in the outfit items list after the API call resolves
       await expect(page.locator('li').filter({ hasText: itemName }).getByRole('button', { name: 'Remove' })).toBeVisible();
     }
@@ -105,6 +108,7 @@ test.describe('outfit CRUD happy path', () => {
     await expect(page.getByTestId('item-detail-page')).toBeVisible();
 
     await page.goBack();
+    await expect(page).toHaveURL(/\/outfits\/[^/]+$/);
     await expect(page.getByTestId('outfit-detail-page')).toBeVisible();
   });
 
