@@ -235,7 +235,7 @@ test.describe('outfit wear log — cleanup', () => {
       const card = page.getByTestId('item-card').filter({ hasText: name });
       if ((await card.count()) === 0) continue;
       await page.getByRole('link', { name: 'View ' + name, exact: true }).click();
-      await page.getByRole('button', { name: 'Delete' }).click();
+      await page.getByRole('button', { name: 'Delete', exact: true }).click();
       await page.getByRole('button', { name: 'Confirm delete' }).click();
       await expect(page).toHaveURL(/\/items$/);
     }

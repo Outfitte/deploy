@@ -191,7 +191,7 @@ test.describe('dashboard stats — teardown', () => {
       const card = page.getByTestId('item-card').filter({ hasText: name });
       if (await card.isVisible()) {
         await page.getByRole('link', { name: `View ${name}` }).click();
-        await page.getByRole('button', { name: 'Delete' }).click();
+        await page.getByRole('button', { name: 'Delete', exact: true }).click();
         await page.getByRole('button', { name: 'Confirm delete' }).click();
         await expect(page).toHaveURL(/\/items$/);
       }
@@ -204,7 +204,7 @@ test.describe('dashboard stats — teardown', () => {
     const card = page.getByTestId('item-card').filter({ hasText: ITEM_3 });
     if (await card.isVisible()) {
       await page.getByRole('link', { name: `View ${ITEM_3}` }).click();
-      await page.getByRole('button', { name: 'Delete' }).click();
+      await page.getByRole('button', { name: 'Delete', exact: true }).click();
       await page.getByRole('button', { name: 'Confirm delete' }).click();
       await expect(page).toHaveURL(/\/items$/);
     }
