@@ -103,7 +103,9 @@ test.describe('dashboard outfit stats — null name fallback', () => {
 test.describe('dashboard outfit stats — teardown', () => {
   test('delete remaining outfits', async ({ page }) => {
     await loginAs(page, creds.email, creds.password);
-    for (const name of [OUTFIT_1, OUTFIT_2]) {
+    // OUTFIT_3 is normally deleted by the delete-test above; include it here
+    // so teardown is idempotent if the suite is interrupted mid-run.
+    for (const name of [OUTFIT_1, OUTFIT_2, OUTFIT_3]) {
       await page.goto('/outfits');
       const card = page.getByTestId('outfit-card').filter({ hasText: name });
       if ((await card.count()) === 0) continue;
