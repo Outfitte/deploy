@@ -84,10 +84,7 @@ test.describe('dashboard outfit stats — delete', () => {
 // ─── Null name fallback ───────────────────────────────────────────────────────
 
 test.describe('dashboard outfit stats — null name fallback', () => {
-  // TODO: unskip after https://github.com/Outfitte/frontend/issues/238 is fixed.
-  // Bug: outfit with empty name shows blank in stat-recent-outfit instead of
-  // a meaningful fallback like 'Untitled outfit' (which OutfitCard uses correctly).
-  test.skip('outfit with no name shows Untitled outfit in Recent outfit card', async ({ page }) => {
+  test('outfit with no name shows Untitled outfit in Recent outfit card', async ({ page }) => {
     await loginAs(page, creds.email, creds.password);
     await page.goto('/outfits/new');
     await page.getByRole('button', { name: 'Save' }).click();

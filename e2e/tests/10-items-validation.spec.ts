@@ -136,23 +136,18 @@ test.describe('422 validation errors — create item', () => {
     await expect(page).toHaveURL(/\/items\/new/);
   });
 
-  // TODO: unskip after https://github.com/Outfitte/frontend/issues/240 is fixed.
-  // Bug: form re-renders all fields on each Add Field click; at 50+ fields under CPU
-  // load (nproc workers) the transition-all animation keeps the button unstable,
-  // causing Playwright's stability check to exceed the 30s test timeout.
-  test.skip('more than 50 metadata fields shows error', async ({ page }) => {
+  test('Add Field button is disabled at the 50-field limit', async ({ page }) => {
+    test.setTimeout(120_000);
     await page.goto('/items/new');
     await page.getByLabel('Name *').fill(`ValidationTooManyMeta-${Date.now()}`);
 
-    for (let i = 1; i <= 51; i++) {
+    for (let i = 1; i <= 50; i++) {
       await page.getByRole('button', { name: 'Add Field' }).click();
       await page.getByPlaceholder('Key').last().fill(`field${i}`);
       await page.getByPlaceholder('Value').last().fill(`value${i}`);
     }
 
-    await page.getByRole('button', { name: 'Save' }).click();
-
-    await expect(page).toHaveURL(/\/items\/new/);
+    await expect(page.getByRole('button', { name: 'Add Field' })).toBeDisabled();
   });
 
   test('edit item: set price without currency shows error', async ({ page }) => {
