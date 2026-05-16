@@ -53,10 +53,7 @@ test.describe('dashboard outfit stats — outfit count', () => {
     await expect(page.getByTestId('stat-total-outfits')).toContainText('3');
   });
 
-  // TODO: unskip after https://github.com/Outfitte/backend/issues/517 is fixed.
-  // Bug: backend stores created_at with second precision (RFC3339); two outfits created
-  // within the same second get the same timestamp, making the "most recent" non-deterministic.
-  test.skip('most recently created outfit shown in Recent outfit card', async ({ page }) => {
+  test('most recently created outfit shown in Recent outfit card', async ({ page }) => {
     await loginAs(page, creds.email, creds.password);
     await page.goto('/');
     await expect(page.getByTestId('stat-recent-outfit')).toContainText(OUTFIT_3);
