@@ -53,6 +53,7 @@ test.describe('transfer-history — setup', () => {
     await page.getByLabel('Name *').fill(ITEM2_NAME);
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/items\/[^/]+$/);
+    await expect(page.getByTestId('item-detail-page')).toBeVisible();
   });
 
   test('create item3', async ({ page }) => {
@@ -60,6 +61,7 @@ test.describe('transfer-history — setup', () => {
     await page.getByLabel('Name *').fill(ITEM3_NAME);
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/items\/[^/]+$/);
+    await expect(page.getByTestId('item-detail-page')).toBeVisible();
   });
 
   test('create item4', async ({ page }) => {
@@ -67,6 +69,7 @@ test.describe('transfer-history — setup', () => {
     await page.getByLabel('Name *').fill(ITEM4_NAME);
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/items\/[^/]+$/);
+    await expect(page.getByTestId('item-detail-page')).toBeVisible();
   });
 });
 
@@ -163,6 +166,14 @@ test.describe('transfer-history — accept with history', () => {
     await expect(page.getByTestId('item-detail-page')).toBeVisible();
     await expect(page.getByTestId('wear-count')).toHaveText('2');
   });
+
+  test('admin Outgoing tab shows item1 transfer with status accepted', async ({ page }) => {
+    await page.goto('/transfers');
+    await page.getByRole('tab', { name: 'Outgoing' }).click();
+    await page.waitForLoadState('networkidle');
+    const row = page.locator('[data-testid^="transfer-row-"]').filter({ hasText: ITEM1_NAME });
+    await expect(row.getByText('accepted')).toBeVisible();
+  });
 });
 
 // ─── Reject flow ──────────────────────────────────────────────────────────────
@@ -256,10 +267,10 @@ test.describe('transfer-history — cancel flow', () => {
     await page.goto('/transfers');
     await expect(page.getByTestId('transfers-page')).toBeVisible();
     const row = page.locator('[data-testid^="transfer-row-"]').filter({ hasText: ITEM3_NAME });
-    if (await row.count() > 0) {
-      await expect(row.getByRole('button', { name: 'Accept' })).not.toBeAttached();
-      await expect(row.getByRole('button', { name: 'Reject' })).not.toBeAttached();
-    }
+    // Backend returns all incoming transfers regardless of status — cancelled row stays visible
+    await expect(row).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Accept' })).not.toBeAttached();
+    await expect(row.getByRole('button', { name: 'Reject' })).not.toBeAttached();
   });
 });
 
@@ -274,7 +285,7 @@ test.describe('transfer-history — cleanup', () => {
       if ((await page.getByRole('link', { name: `View ${name}`, exact: true }).count()) > 0) {
         await page.getByRole('link', { name: `View ${name}`, exact: true }).click();
         await expect(page.getByTestId('item-detail-page')).toBeVisible();
-        await page.getByRole('button', { name: 'Delete' }).click();
+        await page.getByRole('button', { name: 'Delete', exact: true }).click();
         await page.getByRole('button', { name: 'Confirm delete' }).click();
         await expect(page).toHaveURL(/\/items$/);
       }
@@ -287,7 +298,7 @@ test.describe('transfer-history — cleanup', () => {
     if ((await page.getByRole('link', { name: `View ${ITEM1_NAME}`, exact: true }).count()) > 0) {
       await page.getByRole('link', { name: `View ${ITEM1_NAME}`, exact: true }).click();
       await expect(page.getByTestId('item-detail-page')).toBeVisible();
-      await page.getByRole('button', { name: 'Delete' }).click();
+      await page.getByRole('button', { name: 'Delete', exact: true }).click();
       await page.getByRole('button', { name: 'Confirm delete' }).click();
       await expect(page).toHaveURL(/\/items$/);
     }
