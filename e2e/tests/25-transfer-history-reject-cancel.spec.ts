@@ -56,10 +56,7 @@ test.describe('transfer-history — validation', () => {
     await expect(dialog).not.toBeVisible();
   });
 
-  // Skipped: Outfitte/frontend#305 — usePendingTransferItemIds reads non-existent t.item_id,
-  // so the pending-transfer lock is not reflected once /transfers/outgoing is fetched from the server.
-  // This test is read-only (it creates no state), so skipping it does not break the serial chain.
-  test.skip('item with pending transfer → Transfer button absent and banner shown', async ({ page, recipientCredentials }) => {
+  test('item with pending transfer → Transfer button absent and banner shown', async ({ page, recipientCredentials }) => {
     // Reuses VAL_ITEM created above — same serial block, same worker/stack.
     await sendTransfer(page, VAL_ITEM, recipientCredentials.email);
 
@@ -91,10 +88,7 @@ test.describe('transfer-history — accept with history', () => {
     await sendTransfer(page, ACCEPT_ITEM, recipientCredentials.email, true);
   });
 
-  // Skipped: Outfitte/frontend#305 — usePendingTransferItemIds reads non-existent t.item_id,
-  // so the pending-transfer lock is not reflected once /transfers/outgoing is fetched from the server.
-  // This test is read-only (it creates no state), so skipping it does not break the serial chain.
-  test.skip('item shows locked badge in list and transfer banner on detail page', async ({ page }) => {
+  test('item shows locked badge in list and transfer banner on detail page', async ({ page }) => {
     await page.goto('/items');
     const card = page.getByTestId('item-card').filter({ hasText: ACCEPT_ITEM });
     await expect(card.getByTestId('item-locked-badge')).toBeVisible();
@@ -196,10 +190,7 @@ test.describe('transfer-history — cancel flow', () => {
     await sendTransfer(page, CANCEL_ITEM, recipientCredentials.email);
   });
 
-  // Skipped: Outfitte/frontend#305 — usePendingTransferItemIds reads non-existent t.item_id,
-  // so the pending-transfer lock is not reflected once /transfers/outgoing is fetched from the server.
-  // This test is read-only (it creates no state), so skipping it does not break the serial chain.
-  test.skip('item shows locked badge in list and transfer banner on detail page', async ({ page }) => {
+  test('item shows locked badge in list and transfer banner on detail page', async ({ page }) => {
     await page.goto('/items');
     const card = page.getByTestId('item-card').filter({ hasText: CANCEL_ITEM });
     await expect(card.getByTestId('item-locked-badge')).toBeVisible();
