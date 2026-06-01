@@ -9,7 +9,9 @@ test.describe('unauthenticated access to F4 routes', () => {
 
   test('unauthenticated visit to /transfers?tab=outgoing redirects to /login', async ({ page }) => {
     await page.goto('/transfers?tab=outgoing');
-    await expect(page).toHaveURL(/\/login/);
+    // The guard builds the return URL from the pathname only, so the redirect
+    // preserves /transfers in `next` while dropping the ?tab=outgoing query.
+    await expect(page).toHaveURL(/\/login\?next=%2Ftransfers/);
   });
 });
 
