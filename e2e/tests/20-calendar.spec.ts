@@ -194,8 +194,10 @@ test.describe('calendar — edge cases', () => {
     await expect(page.locator('[data-testid="outfit-detail-page"] form')).not.toBeVisible();
 
     await page.goto('/calendar');
-    // Both outfit buttons appear in the same day cell
-    await expect(calendarDayCell(page, DAY_1).getByRole('button', { name: OUTFIT_NAME, exact: true })).toBeVisible();
+    // Both outfit buttons appear in the same day cell.
+    // .first() on OUTFIT_NAME guards the month-start case (e.g. the 1st): DATE_1/DATE_2/DATE_3
+    // all collapse onto day 1, so OUTFIT_NAME has multiple log buttons in this cell.
+    await expect(calendarDayCell(page, DAY_1).getByRole('button', { name: OUTFIT_NAME, exact: true }).first()).toBeVisible();
     await expect(calendarDayCell(page, DAY_1).getByRole('button', { name: OUTFIT_NAME_2, exact: true })).toBeVisible();
   });
 
