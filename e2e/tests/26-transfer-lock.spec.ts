@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures';
-import { loginAs, switchUser } from '../helpers';
+import { loginAs } from '../helpers';
 import type { Page } from '@playwright/test';
 
 // Pending-transfer lock enforcement across item flows. Verifies the proactive
@@ -111,6 +111,11 @@ test.describe('transfer-lock — proactive UI gating', () => {
 // locked ones — so the lock is enforced reactively: adding a locked item hits
 // the backend's 409 (ErrItemTransferPending) and surfaces an error toast. The
 // outfit page does not crash or navigate away.
+//
+// This encodes a deliberate "backstop only" contract. If the picker later gains
+// proactive lock awareness (filtering locked items out), this test should be
+// updated — the item would never reach the Add click — rather than treated as a
+// regression.
 
 test.describe('transfer-lock — outfit picker relies on the 409 backstop', () => {
   test.describe.configure({ mode: 'serial' });
@@ -153,9 +158,11 @@ test.describe('transfer-lock — outfit picker relies on the 409 backstop', () =
     // Page does not crash or navigate away.
     await expect(page.getByTestId('edit-outfit-page')).toBeVisible();
     await expect(page).toHaveURL(/\/outfits\/[^/]+\/edit$/);
-    // The locked item was not added to the outfit's item list.
+    // The locked item was not added to the outfit's item list. A 'Remove'
+    // button only exists for items actually in the outfit, so its absence
+    // proves the add was rejected (and scopes the check to the items list).
     await expect(
-      page.locator('section li').filter({ hasText: OUTFIT_ITEM })
+      page.locator('li').filter({ hasText: OUTFIT_ITEM }).getByRole('button', { name: 'Remove' })
     ).not.toBeAttached();
   });
 });
