@@ -2,6 +2,8 @@
 
 Docker Compose orchestration for Outfitte — wardrobe management application.
 
+For a full operations guide (backup, upgrades, TLS, version pinning) see [SELF_HOSTING.md](SELF_HOSTING.md).
+
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) with the Compose plugin (v2)
