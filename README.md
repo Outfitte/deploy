@@ -99,6 +99,8 @@ npm run test:report                           # open HTML report
 
 Each worker starts a stack on port `40080+N` (e.g. worker 0 → `40080`, worker 1 → `40081`) under project name `outfitte-wN`. Stacks are torn down automatically after each worker finishes. No pre-running stack is needed — the fixture manages everything.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for spec-writing conventions (self-contained describes, fixed item names, `exact: true` link matching, `group-hover` button hover).
+
 ## Local development (without Docker)
 
 Run the backend directly:
