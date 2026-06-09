@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ghcr.io/outfitte/backend:latest
+    image: ghcr.io/outfitte/backend:latest  # pin to a release tag (e.g. :0.1.0) for reproducible deployments
     # No port mapping — reachable only through frontend Nginx proxy
     env_file: .env
     volumes:
@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: ghcr.io/outfitte/frontend:latest
+    image: ghcr.io/outfitte/frontend:latest  # pin to a release tag (e.g. :0.1.0) for reproducible deployments
     ports:
       - "${PORT:-30080}:80"
     environment:
