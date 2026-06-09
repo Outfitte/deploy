@@ -8,11 +8,11 @@ This is the `deploy` repo for the Outfitte wardrobe management application. It c
 - **Docker Compose** orchestration for running the full stack
 - **Playwright E2E smoke tests** that validate the deployed stack end-to-end
 
-The repo expects sibling repositories at the same level:
+The default and CI path pulls published images from GHCR (`ghcr.io/outfitte/*:latest`). Building from sibling repositories is an optional local-development path:
 ```
 Outfitte/
-├── backend/   (Go, built from ../backend)
-├── frontend/  (Vite/Node, built from ../frontend)
+├── backend/   (optional: local-dev source)
+├── frontend/  (optional: local-dev source)
 └── deploy/    ← this repo
 ```
 
@@ -20,9 +20,10 @@ Outfitte/
 
 ### Run the stack
 ```sh
-docker compose up --build        # foreground
-docker compose up --build -d     # background
-docker compose down -v           # stop and remove volumes
+docker compose pull && docker compose up -d   # fetch latest images and start (default)
+docker compose up                             # foreground (log watching)
+docker compose up --build -d                  # build from sibling repos (local dev only)
+docker compose down -v                        # stop and remove volumes
 ```
 
 ### E2E tests
