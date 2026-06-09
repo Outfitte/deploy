@@ -5,13 +5,6 @@ Docker Compose orchestration for Outfitte — wardrobe management application.
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) with the Compose plugin (v2)
-- The following repositories cloned side-by-side:
-  ```
-  Outfitte/
-  ├── backend/
-  ├── frontend/
-  └── deploy/   ← you are here
-  ```
 
 ## Quick start
 
@@ -27,20 +20,18 @@ Docker Compose orchestration for Outfitte — wardrobe management application.
    openssl rand -hex 32
    ```
 
-2. Build and start all services:
+2. Pull and start all services:
 
    ```sh
-   docker compose up --build
+   docker compose up -d
    ```
 
-   The frontend is available at `http://localhost` (port 80 by default).  
+   This pulls `ghcr.io/outfitte/*:latest` and starts the stack.  
+   The frontend is available at `http://localhost:30080`.  
    The backend is not exposed directly — all traffic flows through the Nginx proxy.
 
-3. To run in the background:
-
-   ```sh
-   docker compose up --build -d
-   ```
+   > **Local-from-source development only:** pass `--build` to build images from the
+   > sibling `backend/` and `frontend/` repos instead of pulling from GHCR.
 
 ## Configuration
 
