@@ -54,9 +54,10 @@ data it needs in its own first test(s). Never rely on state set up by another
 describe block.
 
 **Fixed item names.** Use literal strings (e.g. `'WearLog-E2E-Item'`), not
-`Date.now()` at module scope. Playwright re-evaluates each describe block in a
-separate worker, so dynamic names evaluated at module scope will diverge between
-blocks.
+`Date.now()` at module scope or in describe-block setup. Playwright re-evaluates
+each describe block in a separate worker, so dynamic names evaluated outside a
+`test()` callback will diverge between blocks. Using `Date.now()` inside a
+`test()` callback is fine.
 
 **`exact: true` for card links.** Use
 `page.getByRole('link', { name: 'View ' + name, exact: true })` rather than a
@@ -66,10 +67,21 @@ is a prefix of another (e.g. `'Outfit-E2E'` vs `'Outfit-E2E-Zero'`).
 **`group-hover` buttons.** Buttons rendered with `opacity-0 group-hover:opacity-100`
 require hovering the parent card first before clicking.
 
-## Commit style
+**`.first()` on toast locators.** When a test action triggers a notification
+toast, use `.first()` on the locator — e.g. `page.getByText('Item saved').first()`.
+Rapid sequences can produce multiple simultaneous toasts and cause a strict-mode
+violation without it.
+
+**In-file test ordering is guaranteed.** `fullyParallel: false` in the Playwright
+config means tests within a single file always run in sequence — only the
+scheduling of `test.describe` blocks across workers is non-deterministic.
+
+## Commit and PR title style
 
 ```
 <issue-number>: one sentence describing what changed
 ```
 
-Example: `57: add CONTRIBUTING.md and SECURITY.md`
+Use the same format for both the commit message and the PR title.
+
+Example: `42: add widget support to the dashboard`
