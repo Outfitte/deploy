@@ -10,7 +10,7 @@ on:
 
 jobs:
   smoke-test:
-    runs-on: builder
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: read
