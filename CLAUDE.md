@@ -20,9 +20,10 @@ Outfitte/
 
 ### Run the stack
 ```sh
-docker compose up -d             # pull GHCR images and start (default)
-docker compose up --build -d     # build from sibling repos and start (local dev only)
-docker compose down -v           # stop and remove volumes
+docker compose pull && docker compose up -d   # fetch latest images and start (default)
+docker compose up                             # foreground (log watching)
+docker compose up --build -d                  # build from sibling repos (local dev only)
+docker compose down -v                        # stop and remove volumes
 ```
 
 ### E2E tests
