@@ -91,25 +91,27 @@ The database file will be at `./data/outfitte.db` and media files under `./media
 
 ## Backup & restore
 
-**Always back up with the stack stopped** — SQLite writes a WAL (write-ahead log) that must be checkpointed before a consistent snapshot can be taken.
+Back up with the stack stopped — SQLite writes a WAL (write-ahead log) and stopping the stack ensures a clean checkpoint before the snapshot.
+
+> **Volume name prefix:** Docker Compose prepends the project name to each volume name. The project name defaults to the directory containing `docker-compose.yml` (e.g. `deploy` if you cloned into `deploy/`). Verify your volume names with `docker volume ls | grep sqlite_data`. The examples below use `deploy_` — replace it with your actual prefix if different.
 
 ### Backup
 
 ```sh
 docker compose down
-# Named volumes:
+mkdir -p ./backups
 docker run --rm \
-  -v outfitte_sqlite_data:/data \
+  -v deploy_sqlite_data:/data \
   -v "$(pwd)/backups":/backups \
   alpine tar czf /backups/sqlite_data.tar.gz -C /data .
 docker run --rm \
-  -v outfitte_media_storage:/data \
+  -v deploy_media_storage:/data \
   -v "$(pwd)/backups":/backups \
   alpine tar czf /backups/media_storage.tar.gz -C /data .
 docker compose up -d
 ```
 
-With bind mounts, simply copy `./data/` and `./media/` while the stack is stopped:
+With bind mounts, copy `./data/` and `./media/` while the stack is stopped:
 
 ```sh
 docker compose down
@@ -120,11 +122,27 @@ docker compose up -d
 
 ### Restore
 
-Stop the stack, replace the volume contents (or bind-mount directories) with the backup, then restart:
+Stop the stack, restore the volume contents, then restart:
 
 ```sh
 docker compose down
-# restore from backup...
+docker run --rm \
+  -v deploy_sqlite_data:/data \
+  -v "$(pwd)/backups":/backups \
+  alpine tar xzf /backups/sqlite_data.tar.gz -C /data
+docker run --rm \
+  -v deploy_media_storage:/data \
+  -v "$(pwd)/backups":/backups \
+  alpine tar xzf /backups/media_storage.tar.gz -C /data
+docker compose up -d
+```
+
+With bind mounts:
+
+```sh
+docker compose down
+cp -a ./backups/data-<date> ./data
+cp -a ./backups/media-<date> ./media
 docker compose up -d
 ```
 
@@ -174,7 +192,7 @@ The frontend container serves **plain HTTP** on `PORT`. For production, put it b
 - Set `Strict-Transport-Security` (HSTS) **at the reverse proxy level** — the app deliberately does not set HSTS itself, so you retain control over the header parameters.
 - The in-container Nginx already sets `Content-Security-Policy` and other security headers — do not duplicate these at the proxy layer.
 
-Example Caddy snippet:
+Example Caddy snippet (replace `30080` with your configured `PORT` value if different):
 
 ```
 outfitte.example.com {
@@ -182,4 +200,4 @@ outfitte.example.com {
 }
 ```
 
-Caddy provisions a certificate automatically. For Nginx or other proxies, configure TLS termination and `proxy_pass http://localhost:30080;` as you normally would.
+Caddy provisions a certificate automatically. For Nginx or other proxies, configure TLS termination and `proxy_pass http://localhost:30080;` (or your configured `PORT`) as you normally would.
