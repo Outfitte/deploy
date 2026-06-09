@@ -50,6 +50,7 @@ All options are set via the `.env` file. See `.env.example` for the full referen
 | `MEDIA_STORAGE_PATH` | `/data/media` | Media storage path inside the container |
 | `APP_ENV` | `production` | Application environment |
 | `LOG_LEVEL` | `info` | Log level (`debug`, `info`, `warn`, `error`) |
+| `BACKEND_URL` | `http://backend:8080` | Backend URL used by the Nginx proxy |
 
 ## Host access to data (bind mounts)
 
