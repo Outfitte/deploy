@@ -183,8 +183,6 @@ docker compose pull
 docker compose up -d
 ```
 
-See issue [D0-003](https://github.com/Outfitte/deploy/issues/54) for the full version-pinning rationale.
-
 ## Reverse proxy & TLS
 
 The frontend container serves **plain HTTP** on `PORT`. For production, put it behind a TLS-terminating reverse proxy (Nginx, Caddy, Traefik, etc.).
